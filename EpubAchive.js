@@ -1,3 +1,4 @@
+// jshint esnext: true, node: true
 "use strict";
 
 var crc = require('crc');
@@ -123,11 +124,11 @@ class EpubAchive {
 		this._archivePath = archivePath;
 		console.log('constructor');
 		
-		this.zipEntries = [MimetypeEntry]
+		this.zipEntries = [MimetypeEntry];
 
 	}
 
-	addFile(filepath, content) {
+	addFile(filePath, content) {
 		console.log('addFile');
 		var entry = new ZipRecord(filePath, content);
 		this.zipEntries.push(entry);
@@ -142,7 +143,7 @@ class EpubAchive {
 
 		var directoryOffset = buffer.length;
 
-		zipEntries.forEach(function(entry) {
+		this.zipEntries.forEach(function(entry) {
 			entry.writeDirectoryRecord(buffer);
 		});
 
