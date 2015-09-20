@@ -1,24 +1,25 @@
 {
-  "name": "epub",
-  "version": "1.0.0",
-  "description": "",
+  "name": "epubtools",
+  "version": "0.0.0",
+  "description": "A tool to make epub book.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/DrsExplorer/epub.git"
+    "url": "git+https://github.com/DrsExplorer/epubtools.git"
   },
   "author": "",
-  "license": "ISC",
+  "license": "BSD",
   "bugs": {
     "url": "https://github.com/DrsExplorer/epub/issues"
   },
   "homepage": "https://github.com/DrsExplorer/epub#readme",
   "dependencies": {
-    "adm-zip": "^0.4.7",
     "crc": "^3.3.0",
+    "js-yaml": "^3.4.2",
+    "less": "^2.5.1",
     "showdown": "^1.2.3",
     "underscore": "^1.8.3"
   }

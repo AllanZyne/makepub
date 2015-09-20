@@ -1,0 +1,2 @@
+*.md -> chapter.xhtml
+metadata.yaml -> content.opf toc.ncx copyright.xhtml cover.xhtml
