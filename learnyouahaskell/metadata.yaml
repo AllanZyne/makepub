@@ -1,14 +1,18 @@
 ---
-title: Learn You a Haskell
-creator:
-  - author: Miran Lipovača
-language: en-US
-cover image: lyah.png
-stylesheet: stylesheet.less
-identifier:
-  - scheme: ISBN-A
-  - 
-rights: >
-  This work is licensed under a Creative Commons Attribution-Noncommercial-Share Alike 3.0
-  Unported License because I couldn't find a license with an even longer name.
+metadata:
+    title: Learn You a Haskell for Great Good!
+    author: Miran Lipovača
+    language: en-US
+    rights: >
+      This work is licensed under a (Creative Commons Attribution-Noncommercial-Share Alike 3.0
+      Unported License)[http://creativecommons.org/licenses/by-nc-sa/3.0/] because I couldn't
+      find a license with an even longer name.
+    cover: lyah.png
+    stylesheet: stylesheet.less
+
+catalog:
+    - chapter/chap1.md
+    - chapter/chap8.md
+    - chapter/chap9.md
+
 ...

@@ -1,0 +1,9 @@
+META-INF/container.xml
+
+chapter -> chapter.xhtml
+metadata manifest  -> content.opf
+toc.ncx
+copyright.xhtml
+cover.xhtml
+
+

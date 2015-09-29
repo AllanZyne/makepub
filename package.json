@@ -18,6 +18,7 @@
   "homepage": "https://github.com/DrsExplorer/epub#readme",
   "dependencies": {
     "crc": "^3.3.0",
+    "jquery": "^2.1.4",
     "js-yaml": "^3.4.2",
     "less": "^2.5.1",
     "showdown": "^1.2.3",

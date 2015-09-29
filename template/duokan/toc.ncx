@@ -11,43 +11,37 @@
 		<text><%= metadata.title %></text>
 	</docTitle>
 	<navMap>
-		<%
-		var order = 1;
+<%
+var headers = [];
+var order = 0;
 
+catalog.forEach(function(filePath) {
+	var info = _.find(manifest, info => info.path === filePath);
+	info.headers.forEach(function(header) {
+		headers.push(header);
+	});
+});
 
-		function name(file) {
-			var file_name = file.name;
+(function navPoint(level) {
+	var header = headers[order];
+	
+	while (header && header.level === level) {
+		order++;
 
-			function navPoint(header) {
-				print(`
-					<navPoint id="navpoint-${order}" playOrder="${order}">
-						<navLabel>
-							<text>${header.text}</text>
-						</navLabel>
-						<content src="${file_name+'#'+'header.id'}"/>
-					</navPoint>
-				`);
-
-				print('<navPoint id="navpoint-' + order '" playOrder="' + order + '">');
-				order++;
-				print('<navLabel>');
-				print('<text>' + header.text + '</text>');
-				print('</navLabel>');
-				print('<content src="' + file_name + '#' + header.id + '"/>');
-				if (header.headers)
-					header.headers.forEach(navPoint);
-				print('</navPoint>');
-			}
-
-			if (file.headers)
-				file.headers.forEach(navPoint);
-		}
-
+print(`<navPoint id="navpoint-${order}" playOrder="${order}">
+		<navLabel>
+			<text>${header.text}</text>
+		</navLabel>
+		<content src="${header.file}"/>\n`);
 		
-		doc.headers.forEach(function(level, text) {
+		header = headers[order];
+		if (header && header.level === level+1) {
+			navPoint(level+1);
+		}
+print(`\t</navPoint>`);
+	}
 
-		});
-		%>
-
+})(1);
+%>
 	</navMap>
 </ncx>
