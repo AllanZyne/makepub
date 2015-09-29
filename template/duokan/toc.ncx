@@ -28,6 +28,7 @@ catalog.forEach(function(filePath) {
 	while (header && header.level === level) {
 		order++;
 
+
 print(`<navPoint id="navpoint-${order}" playOrder="${order}">
 		<navLabel>
 			<text>${header.text}</text>
