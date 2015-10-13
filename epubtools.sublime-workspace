@@ -1,0 +1,836 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"hea",
+				"header"
+			],
+			[
+				"for",
+				"forEach"
+			],
+			[
+				"cori",
+				"copyright"
+			],
+			[
+				"co",
+				"cover"
+			],
+			[
+				"st",
+				"stylesheet_"
+			],
+			[
+				"epub",
+				"epubPath"
+			],
+			[
+				"iamge",
+				"imageCounter"
+			],
+			[
+				"css",
+				"cssCounter"
+			],
+			[
+				"pa",
+				"pairs"
+			],
+			[
+				"mea",
+				"media_type	(makeepub.js)"
+			],
+			[
+				"ma",
+				"manifest"
+			],
+			[
+				"con",
+				"console"
+			],
+			[
+				"r",
+				"rights"
+			],
+			[
+				"com",
+				"compiled"
+			],
+			[
+				"cont",
+				"content"
+			],
+			[
+				"file",
+				"files"
+			],
+			[
+				"chap",
+				"chapter1"
+			],
+			[
+				"read",
+				"readFileSync"
+			],
+			[
+				"requ",
+				"require('showdown	(README.md)"
+			],
+			[
+				"hed",
+				"header"
+			],
+			[
+				"head",
+				"headers"
+			],
+			[
+				"im",
+				"import"
+			],
+			[
+				"add",
+				"addFile	(EpubAchive.js)"
+			],
+			[
+				"f",
+				"fileTime"
+			],
+			[
+				"cons",
+				"console	(index.js)"
+			],
+			[
+				"wri",
+				"writeZip"
+			],
+			[
+				"ep",
+				"epubFile"
+			],
+			[
+				"buf",
+				"buffer"
+			],
+			[
+				"fil",
+				"fileOffset"
+			],
+			[
+				"en",
+				"entryOffset"
+			],
+			[
+				"filen",
+				"fileEntrySize"
+			],
+			[
+				"len",
+				"length"
+			],
+			[
+				"re",
+				"return"
+			],
+			[
+				"wid",
+				"width"
+			],
+			[
+				"tex",
+				"text-align"
+			],
+			[
+				"base",
+				"base64	(sample.lua)"
+			],
+			[
+				"img",
+				"image"
+			],
+			[
+				"pro",
+				"process"
+			],
+			[
+				"err",
+				"error"
+			],
+			[
+				"in",
+				"instance	Instance"
+			],
+			[
+				"imp",
+				"import"
+			],
+			[
+				"mo",
+				"mod	Module"
+			],
+			[
+				"E",
+				"EmptyTree"
+			],
+			[
+				"tre",
+				"treeElem"
+			],
+			[
+				"inf",
+				"infixr"
+			],
+			[
+				"rec",
+				"rectangleArea"
+			],
+			[
+				"cuboi",
+				"cuboidArea"
+			],
+			[
+				"cub",
+				"cuboidVolume"
+			],
+			[
+				"cuboid",
+				"cuboidVolume"
+			],
+			[
+				"cube",
+				"cubeVolume"
+			],
+			[
+				"shp",
+				"sphereArea"
+			],
+			[
+				"sp",
+				"sphereVolume"
+			],
+			[
+				"big",
+				"biggerSorted"
+			],
+			[
+				"path",
+				"paths"
+			],
+			[
+				"dirn",
+				"dirname"
+			],
+			[
+				"di",
+				"dirnames"
+			],
+			[
+				"bas",
+				"basic_layer"
+			],
+			[
+				"c",
+				"crossfade"
+			],
+			[
+				"cl",
+				"click"
+			],
+			[
+				"St",
+				"Stage"
+			],
+			[
+				"Sto",
+				"StoryParser"
+			],
+			[
+				"type",
+				"typedef"
+			],
+			[
+				"his",
+				"historyLayer"
+			],
+			[
+				"set",
+				"setLineCurror"
+			],
+			[
+				"text",
+				"textcursor"
+			],
+			[
+				"dtd",
+				"dtdText"
+			],
+			[
+				"fun",
+				"function"
+			],
+			[
+				"tim",
+				"timer"
+			],
+			[
+				"t",
+				"text"
+			],
+			[
+				"li",
+				"lightCopy"
+			],
+			[
+				"Auid",
+				"AudioPlayer"
+			],
+			[
+				"Audi",
+				"AudioPlayer"
+			],
+			[
+				"thi",
+				"this.$el"
+			],
+			[
+				"Aui",
+				"AudioPlayer"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "// jshint esnext: true, node: true\n\"use strict\";\n\nvar crc = require('crc');\nvar zlib = require('zlib');\nvar fs = require('fs');\n\n\nconst SIG_FILE_ENTRY = 0x04034B50;\nconst SIG_DIR_ENTRY  = 0x02014B50;\nconst SIG_EOCD = 0x06054B50;\n\n\nclass ZipRecord {\n	constructor(fileName, data, deflate) {\n		if (deflate !== false)\n			deflate = true;\n\n		this.version = 0x000A;\n		this.flags = 0x0000;\n		\n		var now = new Date();\n		this.fileTime = now.getHours() << 11 \n			| now.getMinutes() << 5\n			| now.getSeconds() >> 1;\n		this.fileDate = (now.getFullYear() - 1980 & 0x7f) << 9\n			| (now.getMonth() + 1) << 5\n			| now.getDate();\n\n		fileName = new Buffer(fileName);\n		this.fileName = fileName;\n		this.fileNameLength =  fileName.length;\n		this.extraFieldLength = 0x0000;\n		// console.log('fileNameLength', this.fileNameLength);\n		this.uncompressSize = data.length;\n		this.crc32 = crc.crc32(data);\n\n		if (! deflate) {\n			this.compresion = 0x0000;\n		} else {\n			this.compresion = 0x0008;\n			data = zlib.deflateRawSync(data);\n		}\n		\n		\n		console.log('crc32', (this.crc32).toString(16));\n		this.compressSize = data.length;\n		this.data = data;\n\n		this.versionMadeBy = 0x031E;\n		this.commentLength = 0x0000;\n		this.diskNumberStart = 0x0000;\n		this.internalAttributes = 0x0000;\n		this.externalAttributes = 0x81A40000;\n		// this.headerOffset = 0x0000;\n\n		this.fileEntrySize = 4*4 + 2*7 + this.fileNameLength + this.compressSize;\n		this.dirEntrySize = 4*6 + 2*11 + this.fileNameLength;\n	}\n\n	get size() {\n		return this.fileEntrySize + this.dirEntrySize;\n	}\n\n	writeFileRecord(buf, offset) {\n		// console.log('offset', offset);\n\n		offset = buf.writeUIntLE(SIG_FILE_ENTRY, offset, 4);\n		// console.log('SIG_FILE_ENTRY offset', offset);\n		offset = buf.writeUIntLE(this.version, offset, 2);\n		// console.log('version offset', offset);\n		offset = buf.writeUIntLE(this.flags, offset, 2);\n		// console.log('compresion offset', offset);\n		offset = buf.writeUIntLE(this.compresion, offset, 2);\n		// console.log('fileTime offset', offset);\n		offset = buf.writeUIntLE(this.fileTime, offset, 2);\n		// console.log('fileDate offset', offset);\n		offset = buf.writeUIntLE(this.fileDate, offset, 2);\n		// console.log('crc32 offset', offset);\n		offset = buf.writeUIntLE(this.crc32, offset, 4);\n		// console.log('compressSize offset', offset);\n		offset = buf.writeUIntLE(this.compressSize, offset, 4);\n		offset = buf.writeUIntLE(this.uncompressSize, offset, 4);\n		offset = buf.writeUIntLE(this.fileNameLength, offset, 2);\n		offset = buf.writeUIntLE(this.extraFieldLength, offset, 2);\n		// console.log('fileName offset', offset);\n		this.fileName.copy(buf, offset);\n		this.data.copy(buf, offset+this.fileNameLength);\n		\n		return this.fileEntrySize;\n	}\n\n	writeDirectoryRecord(buf, offset) {\n\n		offset = buf.writeUIntLE(SIG_DIR_ENTRY, offset, 4);\n		offset = buf.writeUIntLE(this.versionMadeBy, offset, 2);\n		offset = buf.writeUIntLE(this.version, offset, 2);\n		offset = buf.writeUIntLE(this.flags, offset, 2);\n		offset = buf.writeUIntLE(this.compresion, offset, 2);\n		offset = buf.writeUIntLE(this.fileTime, offset, 2);\n		offset = buf.writeUIntLE(this.fileDate, offset, 2);\n		offset = buf.writeUIntLE(this.crc32, offset, 4);\n		offset = buf.writeUIntLE(this.compressSize, offset, 4);\n		offset = buf.writeUIntLE(this.uncompressSize, offset, 4);\n		offset = buf.writeUIntLE(this.fileNameLength, offset, 2);\n		offset = buf.writeUIntLE(this.extraFieldLength, offset, 2);\n		offset = buf.writeUIntLE(this.commentLength, offset, 2);\n		offset = buf.writeUIntLE(this.diskNumberStart, offset, 2);\n		offset = buf.writeUIntLE(this.internalAttributes, offset, 2);\n		offset = buf.writeUIntLE(this.externalAttributes, offset, 4);\n		offset = buf.writeUIntLE(this.headerOffset, offset, 4);\n		this.fileName.copy(buf, offset);\n\n		return this.dirEntrySize;\n	}\n}\n\n\nvar MimetypeEntry = new ZipRecord('mimetype', new Buffer('application/epub+zip'), false);\nMimetypeEntry.headerOffset = 0x0000;\n\nclass EpubAchive {\n	constructor(archivePath) {\n		this._archivePath = archivePath;\n		\n		this.zipEntries = [MimetypeEntry];\n		this.entryOffset = MimetypeEntry.fileEntrySize;\n		this.fileSize = MimetypeEntry.size + 4*3+2*5;\n	}\n\n	addFile(filePath, content) {\n		var entry = new ZipRecord(filePath, content);\n		entry.headerOffset = this.entryOffset;\n		this.zipEntries.push(entry);\n		this.fileSize += entry.size;\n		this.entryOffset += entry.fileEntrySize;\n	}\n\n	writeBuffer() {\n		var buffer = new Buffer(this.fileSize),\n			fileOffset = 0,\n			directoryOffset = this.entryOffset;\n\n		console.log('fileSize', this.fileSize);\n		console.log('fileOffset', fileOffset);\n		console.log('directoryOffset', directoryOffset);\n\n		this.zipEntries.forEach(function(entry, index) {\n			fileOffset += entry.writeFileRecord(buffer, fileOffset);\n			directoryOffset += entry.writeDirectoryRecord(buffer, directoryOffset);\n		});\n \n 		console.log('fileOffset', fileOffset);\n		console.log('directoryOffset', directoryOffset);\n\n		var directorySize = directoryOffset - fileOffset;\n		fileOffset = directoryOffset;\n		directoryOffset = this.entryOffset;\n		var diskNumber = 0x0000;\n		var startDiskNumber = 0x0000;\n		var entriesOnDisk = this.zipEntries.length;\n		var entriesOnDirectory = this.zipEntries.length;\n		var commentLength = 0x0000;\n\n		fileOffset = buffer.writeUIntLE(SIG_EOCD, fileOffset, 4);\n		fileOffset = buffer.writeUIntLE(diskNumber, fileOffset, 2);\n		fileOffset = buffer.writeUIntLE(startDiskNumber, fileOffset, 2);\n		fileOffset = buffer.writeUIntLE(entriesOnDisk, fileOffset, 2);\n		fileOffset = buffer.writeUIntLE(entriesOnDirectory, fileOffset, 2);\n		fileOffset = buffer.writeUIntLE(directorySize, fileOffset, 4);\n		fileOffset = buffer.writeUIntLE(directoryOffset, fileOffset, 4);\n		fileOffset = buffer.writeUIntLE(commentLength, fileOffset, 2);\n\n		return buffer;\n	}\n\n	writeZip(archivePath, callback) {\n		var buffer = this.writeBuffer();\n		return fs.writeFile(archivePath, buffer, callback);\n	}\n}\n\n\n\n\nmodule.exports = EpubAchive;\n",
+			"file": "EpubAchive.js",
+			"file_size": 6110,
+			"file_write_time": 130870729394723608,
+			"settings":
+			{
+				"buffer_size": 5924,
+				"line_ending": "Windows"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 104.0,
+		"last_filter": "json",
+		"selected_items":
+		[
+			[
+				"json",
+				"JSON Reindent: reindent file or selection"
+			],
+			[
+				"pci",
+				"Package Control: Install Package"
+			],
+			[
+				"for",
+				"CodeFormatter: Format as Javascript Syntax"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Disable Package"
+			],
+			[
+				"pcd",
+				"Package Control: Disable Package"
+			],
+			[
+				"ssmar",
+				"Set Syntax: MultiMarkdown"
+			],
+			[
+				"haskell",
+				"Build With: Haskell"
+			],
+			[
+				"python",
+				"SublimeREPL: Python - IPython"
+			],
+			[
+				"pcl",
+				"Package Control: List Packages"
+			],
+			[
+				"pcr",
+				"Package Control: Remove Package"
+			]
+		],
+		"width": 416.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '2915d1851351e5ee549c20394736b442' + '8bc59f460fa1548d1514676163dafc88'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)",
+			"import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/D/Workspace/epubtools",
+		"/D/Workspace/epubtools/kenkyuu/小说/OEBPS",
+		"/D/Workspace/epubtools/learnyouahaskell",
+		"/D/Workspace/epubtools/node_modules",
+		"/D/Workspace/epubtools/node_modules/jquery",
+		"/D/Workspace/epubtools/node_modules/pagedown",
+		"/D/Workspace/epubtools/template",
+		"/D/Workspace/epubtools/template/duokan"
+	],
+	"file_history":
+	[
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
+		"/D/Workspace/epubtools/template/duokan/toc.ncx",
+		"/D/Workspace/epubtools/makeepub.js",
+		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/stylesheet_dec.css",
+		"/D/Workspace/epubtools/learnyouahaskell/stylesheet/stylesheet.less",
+		"/D/Workspace/epubtools/kenkyuu/小说/OEBPS/content.opf",
+		"/D/Workspace/epubtools/learnyouahaskell/metadata.yaml",
+		"/C/Users/allan_000/Downloads/Compressed/docbook-to-epub/my-epub.xml",
+		"/D/Workspace/epubtools/template/duokan/content.opf",
+		"/C/Users/allan_000/Downloads/Compressed/epub-raw-files/OEBPS/content.opf",
+		"/D/Workspace/epubtools/template/duokan/templateRule.txt",
+		"/D/Workspace/epubtools/template/duokan/chapter.xhtml",
+		"/D/Workspace/epubtools/kenkyuu/小说/OEBPS/toc.ncx",
+		"/D/Workspace/epubtools/npm-debug.log",
+		"/C/Users/allan_000/Documents/eee.txt",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/toc.ncx",
+		"/C/Users/allan_000/Documents/eee.js",
+		"/D/Workspace/epubtools/template/duokan/copyright.xhtml",
+		"/D/Workspace/epubtools/template/duokan/manifest",
+		"/C/Users/allan_000/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/C/Users/allan_000/Downloads/Compressed/DobbyPublicHome2_3987/Bookbase/preface.xhtml",
+		"/D/Workspace/epubtools/learnyouahaskell/stylesheet.less",
+		"/C/Users/allan_000/AppData/Roaming/Sublime Text 3/Packages/User/HTML.sublime-settings",
+		"/D/Workspace/epubtools/XIANG",
+		"/D/Workspace/epubtools/learnyouahaskell/style.less",
+		"/D/Workspace/epubtools/learnyouahaskell/reset.css",
+		"/D/Workspace/epubtools/learnyouahaskell/highlight.css",
+		"/D/Workspace/epubtools/package.json",
+		"/D/Workspace/epubtools/learnyouahaskell/style",
+		"/C/Users/allan_000/AppData/Roaming/Sublime Text 3/Packages/SublimeLinter/SublimeLinter.sublime-settings",
+		"/D/Workspace/epubtools/node_modules/crc/lib/crc32.js",
+		"/D/Workspace/epubtools/index.js",
+		"/D/Workspace/epubtools/EpubAchive.js",
+		"/C/Users/allan_000/Downloads/Compressed/tsrh.nfo",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/make.sh",
+		"/D/Workspace/epubtools/.jshintrc",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/temp.txt",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/style.css",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/ch003.xhtml",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/chap9.md",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/chap8.md",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/Input and Output - Learn You a Haskell for Great Good!_files/SyntaxHighlighter.css",
+		"/D/BaiduYunDownload/C88汉化本分类合集第三弹（52本，2.16G，09.01-09.07）/windows修复补丁2（2015.09.09）/zip.py",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/stylesheet.css",
+		"/C/Users/allan_000/Downloads/Compressed/DobbyPublicHome2_3987/Bookbase/chapter.xhtml",
+		"/C/Users/allan_000/Downloads/Compressed/DobbyPublicHome2_3987/Bookbase/copyright.xhtml",
+		"/C/Users/allan_000/Downloads/Compressed/DobbyPublicHome2_3987/Bookbase/cover.xhtml",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/META-INF/com.apple.ibooks.display-options.xml",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/META-INF/container.xml",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/mimetype",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/content.opf",
+		"/D/Workspace/epubtools/gainian.js",
+		"/D/Workspace/epubtools/node_modules/showdown/bin/showdown.js",
+		"/D/Workspace/epubtools/node_modules/showdown/package.json",
+		"/D/Workspace/epubtools/node_modules/showdown/src/cli/cli.js",
+		"/D/Workspace/epubtools/node_modules/showdown/src/cli/makehtml.cmd.js",
+		"/D/Workspace/epubtools/node_modules/showdown/src/showdown.js",
+		"/D/Workspace/epubtools/node_modules/showdown/README.md",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/learnyouahaskell.epub",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/ch002.xhtml",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/ch001.xhtml",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/sample.lua",
+		"/C/Users/allan_000/Documents/图书/计算机/pandoc/test.md",
+		"/C/Users/allan_000/Documents/图书/计算机/pandoc/behead.hs",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/haskell.js",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/chap1.md",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/learnyouahaskell/nav.xhtml",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/metadata.yaml",
+		"/C/Users/allan_000/Documents/图书/小说类/看不见的城市/epub.css",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/reset.css",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/Introduction - Learn You a Haskell for Great Good!_files/SyntaxHighlighter.css",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/chap8_a2.md",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/chap1.html",
+		"/D/Workspace/haskell/Class.hs",
+		"/D/Workspace/haskell/Type.hs",
+		"/C/Users/allan_000/Documents/图书/计算机/haskell/chap1_a.md",
+		"/D/Workspace/haskell/Geometry.hs",
+		"/D/Workspace/pandoc-1.15.0.6/src/Text/Pandoc/Writers/Markdown.hs",
+		"/D/Workspace/pandoc-1.15.0.6/src/Text/Pandoc/Readers/Markdown.hs",
+		"/D/Workspace/haskell/baby.hs",
+		"/D/goagent/EasyGoAgent-master/local/proxy.ini",
+		"/C/Users/allan_000/AppData/Roaming/Sublime Text 3/Packages/SublimeHaskell/README.md",
+		"/C/Users/allan_000/AppData/Roaming/Sublime Text 3/Packages/SublimeHaskell/Settings/SublimeHaskell.sublime-settings",
+		"/D/Workspace/learnyouahaskell-zh-tw.github.com-source/README.markdown",
+		"/C/Users/allan_000/Documents/图书/小说类/看不见的城市/book/content.opf",
+		"/C/Users/allan_000/Documents/图书/小说类/看不见的城市/book/ch001.xhtml",
+		"/C/Users/allan_000/Documents/图书/小说类/看不见的城市/book/cover.xhtml",
+		"/D/Workspace/pandoc-1.15.0.6/src/Text/Pandoc/Writers/EPUB.hs",
+		"/C/Users/allan_000/Documents/图书/小说类/看不见的城市/metadata.yaml",
+		"/C/Users/allan_000/Documents/图书/小说类/看不见的城市/book.md",
+		"/D/Workspace/pandoc-1.15.0.6/INSTALL",
+		"/D/Workspace/learnyouahaskell-zh-tw.github.com-source/Gemfile",
+		"/C/Users/allan_000/.babun/cygwin/home/allan_000/.local/bin/bundle",
+		"/C/Users/allan_000/AppData/Roaming/cabal/x86_64-windows-ghc-7.8.3/transformers-compat-0.4.0.4/Paths_transformers_compat.hi",
+		"/D/Workspace/转换文档/template/markdown.template.html",
+		"/D/Workspace/转换文档/template/html.template.html",
+		"/C/Users/allan_000/Downloads/458b69f9cd6ff048add8e0871ecffb56",
+		"/C/Users/allan_000/Downloads/xxx.txt",
+		"/C/Users/allan_000/.babun/babun.bat",
+		"/C/Users/allan_000/Downloads/local-ntp.har",
+		"/D/Workspace/转换文档/new.md",
+		"/D/Workspace/转换文档/new.json",
+		"/D/Workspace/bypy/README.md",
+		"/D/Workspace/bypy/bysync.py",
+		"/D/Workspace/test/.gitmodules",
+		"/D/Workspace/转换文档/process.js",
+		"/D/Workspace/转换文档/new.py",
+		"/D/Workspace/转换文档/newn.json",
+		"/D/Workspace/转换文档/template/index.template.html",
+		"/D/Workspace/Master/README.md",
+		"/C/Users/allan_000/Downloads/gnome-builder-3.16.3.news",
+		"/D/Workspace/create-template-master/README.md",
+		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/KAGParser到绑定的实现（供参考）/KAGController.h",
+		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/KAGParser到绑定的实现（供参考）/KAGController.cpp",
+		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/KAGParser到绑定的实现（供参考）/TjsKAGController.h",
+		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/KAGParser到绑定的实现（供参考）/TjsKAGController.cpp",
+		"/C/Users/allan_000/foo.hs",
+		"/D/Workspace/chinesize/AdvTry/DatParse/arcpack.asm",
+		"/D/Workspace/chinesize/AdvTry/DatParse/makedbg.bat",
+		"/D/Workspace/chinesize/AdvTry/DatParse/arcpack.inc",
+		"/D/Workspace/chinesize/.gitignore",
+		"/D/_galgame/Locale Emulator/LEProc.exe",
+		"/F/新日本语能力测试N1词汇必备（第2版・附赠MP3光盘）/N1必备001-062(あ-お行)/N1必备001-009(あ-あっぱく).lrc",
+		"/D/Silent Hill 2/data/etc/message/common_msg_e.mes",
+		"/D/_galgame/bke_creator/parser_api.txt"
+	],
+	"find":
+	{
+		"height": 28.0
+	},
+	"find_in_files":
+	{
+		"height": 93.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"5e4dc1b6-ac2d-4b9e-a5b0-1f52151660bc",
+			"be82fd04-00a8-4e06-9074-46eca9cbfbcd",
+			"template_path",
+			"_HashHTMLBlocks",
+			"console.log",
+			"9a8c18a3-0459-4d25-9d51-c6cea8f37946",
+			"root",
+			"_HashHTMLBlocks",
+			"_Detab",
+			"outputModifiers",
+			"0",
+			"SIG_DIR",
+			"SIG_FILE",
+			"0",
+			"background-im",
+			"background",
+			"http://s3.amazonaws.com/",
+			"<img",
+			"&lt;-",
+			"-&gt;",
+			"C\\#",
+			"we make a fun",
+			"we make a funt",
+			" {.haskell:hs name=\"code\"}",
+			"\\]",
+			"\\[",
+			"<span class=\"fixed\">(.*?)</span>",
+			"http://s3.amazonaws.com/",
+			"\">",
+			"\\*",
+			"\\]",
+			"\\[",
+			"pipe",
+			"attributes",
+			"http://s3.amazonaws.com/",
+			"chapters",
+			"http://s3.amazonaws.com/",
+			" {.haskell:hs name=\"code\"}",
+			"&gt;",
+			"<span class=\"fixed\">(.*?)</span>",
+			"&gt;",
+			" {.haskell:hs name=\"code\"}",
+			"<span class=\"fixed\">(.*?)</span>",
+			"(.+)\\n",
+			"<span class=\"fixed\">(.*?)</span>",
+			"\\n[^\\n]",
+			"opf",
+			".+之(一|二|三|四|五|六|七|八|九|十)$",
+			"城市和.{1,4}之.+",
+			".{2,2}和.{1,4}之.+",
+			".+和.+之.+",
+			"第.章$",
+			"^　　",
+			"",
+			"",
+			"",
+			"",
+			"\\S+Background\\S*",
+			"",
+			"",
+			"",
+			"",
+			"",
+			"",
+			"",
+			"",
+			" ",
+			"",
+			"",
+			"#",
+			"   ",
+			"\\0+",
+			"   ",
+			"\\0\\0\\0",
+			"switch",
+			"function",
+			"trans",
+			"runtime",
+			"textcursor",
+			",",
+			"effect",
+			"first_init",
+			"menu_full",
+			"sceneObject",
+			"textBuffer",
+			"loadScene",
+			"console",
+			"\"",
+			"three-dimensional",
+			"preloadScene",
+			"\"",
+			"\\s+(?!\\w)",
+			"log.",
+			"passw",
+			"z-index",
+			"\\}\\s",
+			";",
+			"SceneParser",
+			"@fg storage=c key=0xffffff t=0 l=320 time=250",
+			"@fg storage=l key=0xffffff t=0 l=320 time=250",
+			"@fg storage=w key=0xffffff t=0 l=320 time=250",
+			"@fg storage=t key=0xffffff t=0 l=320 time=250"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"2222",
+			"1111",
+			"",
+			"<-",
+			"->",
+			"C#",
+			"haskell",
+			"]",
+			"[",
+			"`$1`",
+			"",
+			"\"/>",
+			"*",
+			"\\*",
+			"]",
+			"[",
+			"",
+			"haskell",
+			">",
+			"`$1`",
+			">",
+			"haskell",
+			"`$1`",
+			"$1 ",
+			"## $0",
+			"# $0",
+			"",
+			"$$",
+			"#",
+			" ",
+			"'",
+			"3D",
+			"'",
+			"\\t",
+			"tavg.",
+			"'$0'",
+			"'$1'",
+			"},",
+			",",
+			"[老残]",
+			"[莉莉]",
+			"[小白]",
+			"[沈泰]"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "EpubAchive.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5924,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								5218,
+								5218
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScriptNext - ES6 Syntax/JavaScriptNext.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 28.0
+	},
+	"input":
+	{
+		"height": 35.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 157.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.haskell_error_checker":
+	{
+		"height": 149.0
+	},
+	"pinned_build_system": "",
+	"project": "epubtools.sublime-project",
+	"replace":
+	{
+		"height": 52.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 260.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

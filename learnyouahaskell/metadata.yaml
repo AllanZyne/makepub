@@ -1,18 +1,33 @@
 ---
-metadata:
+
+# 图书的基本信息
+metadata: 
     title: Learn You a Haskell for Great Good!
     author: Miran Lipovača
+    publisher:
     language: en-US
     rights: >
       This work is licensed under a (Creative Commons Attribution-Noncommercial-Share Alike 3.0
       Unported License)[http://creativecommons.org/licenses/by-nc-sa/3.0/] because I couldn't
       find a license with an even longer name.
-    cover: lyah.png
-    stylesheet: stylesheet.less
+    cover: lyah.png  # 封面图片
+    stylesheet: stylesheet/stylesheet.less
 
-catalog:
-    - chapter/chap1.md
-    - chapter/chap8.md
-    - chapter/chap9.md
+# 资源文件及目录
+# 目录可以使用数组来添加多个文件夹
+resource: 
+    # 图片目录
+    image: lyah/
+    # 字体目录
+    font:
+    # 音频、视频目录
+    media:
+
+# 图书的目录（直接用文件名时自动使用文件中的<hx>作为标题）
+# 支持格式：md、xhtml
+catalog: 
+    - chap1.md
+    - chap8.md
+    - chap9.md
 
 ...
