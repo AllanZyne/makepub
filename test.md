@@ -1,5 +1,3 @@
+Here is a footnote[^footnote].
 
-# header
-	    sdfasdf
-asdfsad
-dsaf	dfdasf asdfsad	  
+  [^footnote]: Here is the *text* of the **footnote**.

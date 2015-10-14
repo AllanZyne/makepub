@@ -15,7 +15,7 @@ var markdown = require('./lib/Markdown.js');
 
 var md = markdown(fs.readFileSync('test.md').toString());
 
-fs.writeFileSync('_test.md', md.toHtml());
+fs.writeFileSync('_test.md', md.makeHtml());
 
 
 
@@ -27,268 +27,268 @@ var templatePath = 'template/' + epubTemplate + '/';
 
 
 colors.setTheme({
-  silly: 'rainbow',
-  input: 'grey',
-  verbose: 'cyan',
-  prompt: 'grey',
-  info: 'grey',
-  data: 'grey',
-  help: 'cyan',
-  warn: 'yellow',
-  debug: 'blue',
-  error: 'red'
+    silly: 'rainbow',
+    input: 'grey',
+    verbose: 'cyan',
+    prompt: 'grey',
+    info: 'grey',
+    data: 'grey',
+    help: 'cyan',
+    warn: 'yellow',
+    debug: 'blue',
+    error: 'red'
 });
 
 // var console_error = console.error;
 // console.error = function() {
-// 	console_error.call(console, colors.error.apply(null, arguments));
+//  console_error.call(console, colors.error.apply(null, arguments));
 // }
 
 function error() {
-	console.error(colors.error.apply(null, arguments));
+    console.error(colors.error.apply(null, arguments));
 }
 
 function print() {
-	console.log.apply(console, arguments);
+    console.log.apply(console, arguments);
 }
 
 function info() {
-	console.info(colors.info.apply(null, arguments));
+    console.info(colors.info.apply(null, arguments));
 }
 
 function uuid() {
-	function s4() {
-		return Math.floor((1 + Math.random()) * 0x10000)
-			       .toString(16)
-			       .substring(1);
-	}
-	return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+                   .toString(16)
+                   .substring(1);
+    }
+    return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 
 
 
 function* dirWalk(root) {
-	var files = [];
+    var files = [];
 
-	(function _dirWalk(root, dir) {
-		fs.readdirSync(root).forEach(function(file) {
-			var stats = fs.statSync(root + file);
-			if (stats.isDirectory())
-				_dirWalk(root+file+'/', dir+file+'/');
-			else
-				files.push(dir+file);
-		});
-	})(root, "");
+    (function _dirWalk(root, dir) {
+        fs.readdirSync(root).forEach(function(file) {
+            var stats = fs.statSync(root + file);
+            if (stats.isDirectory())
+                _dirWalk(root+file+'/', dir+file+'/');
+            else
+                files.push(dir+file);
+        });
+    })(root, "");
 
-	for (var i = 0, len = files.length; i < len; i++) {
-		yield files[i];
-	}
+    for (var i = 0, len = files.length; i < len; i++) {
+        yield files[i];
+    }
 }
 
 
 
 function templateRules() {
-	var rule_path = 'template/' + epubTemplate + '/templateRule.txt';
-	var rule_content = fs.readFileSync(rule_path);
+    var rule_path = 'template/' + epubTemplate + '/templateRule.txt';
+    var rule_content = fs.readFileSync(rule_path);
 
 }
 
 function applyTemplate(filePath, data) {
-	var template = fs.readFileSync(filePath);
-	var compiled = _.template(template.toString());
-	// console.log(data);
-	return compiled(data);
+    var template = fs.readFileSync(filePath);
+    var compiled = _.template(template.toString());
+    // console.log(data);
+    return compiled(data);
 }
 
 function nomalizePath(filePath) {
-	var _filePath = filePath.replace( );
-	return _filePath;
+    var _filePath = filePath.replace( );
+    return _filePath;
 }
 
 
 
 function* epubFiles() {
-	
-	var epubMetadata = yaml.safeLoad(fs.readFileSync(epubPath+'metadata.yaml', 'utf8'));
+    
+    var epubMetadata = yaml.safeLoad(fs.readFileSync(epubPath+'metadata.yaml', 'utf8'));
 
- 	var manifest = [];
-	var xhtmlCounter = 0;
-	var imageCounter = 0;
-	var cssCounter = 0;
-	var otherCounter = 0;
+    var manifest = [];
+    var xhtmlCounter = 0;
+    var imageCounter = 0;
+    var cssCounter = 0;
+    var otherCounter = 0;
 
 
-	epubMetadata.book_id = uuid();
-	epubMetadata.resource_id = uuid();
+    epubMetadata.book_id = uuid();
+    epubMetadata.resource_id = uuid();
 
- 	// 样式表
- 	var styleSheet = epubMetadata.metadata.stylesheet;
- 	
- 	if (! styleSheet || styleSheet.length <= 0) {
- 		styleSheet = 'default.css';
- 		info("使用默认的样式表：", styleSheet);
- 	} else {
- 		// styleSheet = epubPath+styleSheet;
- 	}
+    // 样式表
+    var styleSheet = epubMetadata.metadata.stylesheet;
+    
+    if (! styleSheet || styleSheet.length <= 0) {
+        styleSheet = 'default.css';
+        info("使用默认的样式表：", styleSheet);
+    } else {
+        // styleSheet = epubPath+styleSheet;
+    }
 
-	let content = fs.readFileSync(epubPath+styleSheet),
-		ext = styleSheet.match(/\w*$/)[0];
+    let content = fs.readFileSync(epubPath+styleSheet),
+        ext = styleSheet.match(/\w*$/)[0];
 
-	// print(path.resolve(epubPath+styleSheet));
+    // print(path.resolve(epubPath+styleSheet));
 
-	switch (ext) {
-		case 'less':
-			less.render(content.toString(), {
-				filename: path.resolve(epubPath+styleSheet),
-				paths: ['.']
-			}, function (err, output) {
-				if (err) throw err;
-				content = output.css;
-			});
-			epubMetadata.metadata.stylesheet = styleSheet.replace(/\w*$/, "css");
-			yield [styleSheet.replace(/\w*$/, "css"), new Buffer(content)];
-			break;
-	}
+    switch (ext) {
+        case 'less':
+            less.render(content.toString(), {
+                filename: path.resolve(epubPath+styleSheet),
+                paths: ['.']
+            }, function (err, output) {
+                if (err) throw err;
+                content = output.css;
+            });
+            epubMetadata.metadata.stylesheet = styleSheet.replace(/\w*$/, "css");
+            yield [styleSheet.replace(/\w*$/, "css"), new Buffer(content)];
+            break;
+    }
  
-	// 文件目录
-	if (! epubMetadata.catalog) {
-		throw new Error("metadata.yaml 中没有定义 catalog");
-	}
+    // 文件目录
+    if (! epubMetadata.catalog) {
+        throw new Error("metadata.yaml 中没有定义 catalog");
+    }
 
-	var converter = new showdown.Converter();
+    var converter = new showdown.Converter();
 
-	// console.log(epubMetadata.catalog);
-	for (let filePath of epubMetadata.catalog) {
-		try {
-			let content = fs.readFileSync(epubPath+filePath),
-				ext = filePath.match(/\w*$/)[0];
+    // console.log(epubMetadata.catalog);
+    for (let filePath of epubMetadata.catalog) {
+        try {
+            let content = fs.readFileSync(epubPath+filePath),
+                ext = filePath.match(/\w*$/)[0];
 
-			switch (ext) {
-				case 'md':
-					epubMetadata.content = converter.makeHtml(content.toString());
-					content = applyTemplate(templatePath+'chapter.xhtml', epubMetadata);
-					yield [filePath.replace(/\w*$/, "xhtml"), new Buffer(content)];
-					break;
-			}
-		} catch (err) {
-			console.log(err);
-		}
-	}
+            switch (ext) {
+                case 'md':
+                    epubMetadata.content = converter.makeHtml(content.toString());
+                    content = applyTemplate(templatePath+'chapter.xhtml', epubMetadata);
+                    yield [filePath.replace(/\w*$/, "xhtml"), new Buffer(content)];
+                    break;
+            }
+        } catch (err) {
+            console.log(err);
+        }
+    }
 
 
 
-	// for (let path of dirWalk(epubPath)) {
-	// 	let content = fs.readFileSync(epubPath+path),
-	// 		ext = path.match(/\w+$/);
-		
-	// 	if (ext) {
-	// 		let content, html, err, css;
-	// 		switch (ext[0]) {
-	// 			case "md":
-	// 				info.media_type = 'application/xhtml+xml';
-	// 				info.id = "xhtml_" + xhtmlCounter++;
-	// 				info.headers = [];
-	// 				info.href = path.replace(/\w+$/, "xhtml");
+    // for (let path of dirWalk(epubPath)) {
+    //  let content = fs.readFileSync(epubPath+path),
+    //      ext = path.match(/\w+$/);
+        
+    //  if (ext) {
+    //      let content, html, err, css;
+    //      switch (ext[0]) {
+    //          case "md":
+    //              info.media_type = 'application/xhtml+xml';
+    //              info.id = "xhtml_" + xhtmlCounter++;
+    //              info.headers = [];
+    //              info.href = path.replace(/\w+$/, "xhtml");
 
-	// 				content = fs.readFileSync(epubPath+path);
-	// 				html = converter.makeHtml(content.toString());
-	// 				html.replace(/<(h[1-6])\b.*?>(.*?)<\/\1>/g, function(_, level, title) {
-	// 					console.log(parseInt(level.match(/\d/g)[0]), title);
+    //              content = fs.readFileSync(epubPath+path);
+    //              html = converter.makeHtml(content.toString());
+    //              html.replace(/<(h[1-6])\b.*?>(.*?)<\/\1>/g, function(_, level, title) {
+    //                  console.log(parseInt(level.match(/\d/g)[0]), title);
 
-	// 					info.headers.push({
-	// 						level: parseInt(level.match(/\d/g)[0]),
-	// 						text: title,
-	// 					});
-	// 				});
+    //                  info.headers.push({
+    //                      level: parseInt(level.match(/\d/g)[0]),
+    //                      text: title,
+    //                  });
+    //              });
 
-	// 				yield [info.href, new Buffer(html)];
-	// 				break;
-	// 			case "xhtml":
-	// 				info.media_type = 'application/xhtml+xml';
-	// 				info.id = "xhtml_" + xhtmlCounter++;
-	// 				info.headers = [];
+    //              yield [info.href, new Buffer(html)];
+    //              break;
+    //          case "xhtml":
+    //              info.media_type = 'application/xhtml+xml';
+    //              info.id = "xhtml_" + xhtmlCounter++;
+    //              info.headers = [];
 
-	// 				content = fs.readFileSync(epubPath+path);
-	// 				html = content.toString();
-	// 				html.replace(/<(h[1-6])\b.*?>(.*?)<\/\1>/g, function(_, level, title) {
-	// 					console.log(level.match(/\d/g), title);
+    //              content = fs.readFileSync(epubPath+path);
+    //              html = content.toString();
+    //              html.replace(/<(h[1-6])\b.*?>(.*?)<\/\1>/g, function(_, level, title) {
+    //                  console.log(level.match(/\d/g), title);
 
-	// 					info.headers.push({
-	// 						level: parseInt(level.match(/\d/)[0]),
-	// 						text: title,
-	// 					});
-	// 				});
+    //                  info.headers.push({
+    //                      level: parseInt(level.match(/\d/)[0]),
+    //                      text: title,
+    //                  });
+    //              });
 
-	// 				yield [path, content];
-	// 				break;
-	// 			case "less":
-	// 				info.media_type = 'text/css';
-	// 				info.id = 'stylesheet_' + cssCounter++;
-	// 				info.href = path.replace(/\w+$/, "css");
+    //              yield [path, content];
+    //              break;
+    //          case "less":
+    //              info.media_type = 'text/css';
+    //              info.id = 'stylesheet_' + cssCounter++;
+    //              info.href = path.replace(/\w+$/, "css");
 
-	// 				content = fs.readFileSync(epubPath+path);
+    //              content = fs.readFileSync(epubPath+path);
 
-	// 				less.render(content.toString(), function (e, output) {
-	// 					if (e)
-	// 						err = e;
-	// 					else
-	// 						css = output.css;
-	// 				});
+    //              less.render(content.toString(), function (e, output) {
+    //                  if (e)
+    //                      err = e;
+    //                  else
+    //                      css = output.css;
+    //              });
 
-	// 				if (err) {
-	// 					console.error(err);
-	// 					return;
-	// 				} else
-	// 					err = undefined;
+    //              if (err) {
+    //                  console.error(err);
+    //                  return;
+    //              } else
+    //                  err = undefined;
 
-	// 				yield [info.href, new Buffer(css)];
-	// 				break;
-	// 			case 'png':
-	// 				info.media_type = 'image/png';
-	// 				info.id = 'image_' + imageCounter++;
+    //              yield [info.href, new Buffer(css)];
+    //              break;
+    //          case 'png':
+    //              info.media_type = 'image/png';
+    //              info.id = 'image_' + imageCounter++;
 
-	// 				yield [path, fs.readFileSync(epubPath+path)];
-	// 				break;
-	// 			case 'jpg':
-	// 				info.media_type = 'image/jpg';
-	// 				info.id = 'image_' + imageCounter++;
+    //              yield [path, fs.readFileSync(epubPath+path)];
+    //              break;
+    //          case 'jpg':
+    //              info.media_type = 'image/jpg';
+    //              info.id = 'image_' + imageCounter++;
 
-	// 				yield [path, fs.readFileSync(epubPath+path)];
-	// 				break;
-	// 			case 'gif':
-	// 				info.media_type = 'image/gif';
-	// 				info.id = 'image_' + imageCounter++;
+    //              yield [path, fs.readFileSync(epubPath+path)];
+    //              break;
+    //          case 'gif':
+    //              info.media_type = 'image/gif';
+    //              info.id = 'image_' + imageCounter++;
 
-	// 				yield [path, fs.readFileSync(epubPath+path)];
-	// 				break;
-	// 			case 'css':
-	// 				info.media_type = 'text/css';
-	// 				info.id = 'stylesheet_' + cssCounter++;
+    //              yield [path, fs.readFileSync(epubPath+path)];
+    //              break;
+    //          case 'css':
+    //              info.media_type = 'text/css';
+    //              info.id = 'stylesheet_' + cssCounter++;
 
-	// 				yield [path, fs.readFileSync(epubPath+path)];
-	// 				break;
-	// 			default:
-	// 				info.media_type = 'unknown';
-	// 				info.id = 'unknown_' + otherCounter++;
+    //              yield [path, fs.readFileSync(epubPath+path)];
+    //              break;
+    //          default:
+    //              info.media_type = 'unknown';
+    //              info.id = 'unknown_' + otherCounter++;
 
-	// 				yield [path, fs.readFileSync(epubPath+path)];
-	// 		}
-	// 	}
+    //              yield [path, fs.readFileSync(epubPath+path)];
+    //      }
+    //  }
 
-	// 	manifest.push(info);
-	// }
+    //  manifest.push(info);
+    // }
 
-	// var content = applyTemplate(templatePath+'content.opf', epubMetadata);
-	// if (! content)
-	// 	return;
-	// // console.log(content)
-	// yield ['content.opf', new Buffer(pd.xml(content))];
+    // var content = applyTemplate(templatePath+'content.opf', epubMetadata);
+    // if (! content)
+    //  return;
+    // // console.log(content)
+    // yield ['content.opf', new Buffer(pd.xml(content))];
 
-	// content = applyTemplate(templatePath+'toc.ncx', epubMetadata);
-	// if (! content)
-	// 	return;
+    // content = applyTemplate(templatePath+'toc.ncx', epubMetadata);
+    // if (! content)
+    //  return;
 
-	// yield ['toc.ncx', new Buffer(pd.xml(content))];
+    // yield ['toc.ncx', new Buffer(pd.xml(content))];
 
 }
 
@@ -296,20 +296,20 @@ function* epubFiles() {
 
 
 try {
-	for (let file of epubFiles()) {
-		// var path = epubPath + file[0];
-		// var dir = (epubPath + file[0]).match(/(.*)\/.*/)[1];
-		// console.log(path);
-		// console.log(dir);
+    for (let file of epubFiles()) {
+        // var path = epubPath + file[0];
+        // var dir = (epubPath + file[0]).match(/(.*)\/.*/)[1];
+        // console.log(path);
+        // console.log(dir);
 
-		info(epubPath + file[0]);
-		fs.writeFile(epubPath + file[0], file[1]);
+        info(epubPath + file[0]);
+        fs.writeFile(epubPath + file[0], file[1]);
 
-		//epubFile.addFile(file.name, file.content);
-	}
+        //epubFile.addFile(file.name, file.content);
+    }
 } catch(e) {
-	// console.error(e);
-	throw e;
+    // console.error(e);
+    throw e;
 }
 
 // epubFile.writeZip('my_book.zip');
