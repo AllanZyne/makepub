@@ -16,14 +16,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-(function() {
-    var SyntaxHighlighter = require('./shCore.js').SyntaxHighlighter;
-
-    function Brush() {
+dp.sh.Brushes.Haskell = function()
+{
         var _split = function(str)
                      {
                        return "\\s"+str.replace(/ /g,"\\s|\\s").replace(/>/g, '&gt;').replace(/</g, '&lt;')+"\\s";
-                     };
+                     }
 
         var keywords = 'do else if in infixl infixr let module case of ' + 
                        'primitive then import as hiding qualified default';
@@ -35,40 +33,34 @@
         var common_operators = "\\$ \\. >>= >> \\+ \\* \\+\\+ = \\| \\- <= >= < > /= == \\^ \\/ : \\<\\*\\> \\<\\$\\>";
 
         this.regexList = [
-                { regex: /--.*$/gm, css: 'comments' },                                  // one line comments
-                { regex: /{-[\s\S]*?-}/gm, css: 'comments' },                               // multiline comments
-                { regex: SyntaxHighlighter.regexLib.doubleQuotedString,  css: 'string' },           // double quoted strings
-                { regex: new RegExp('^ *#.*', 'gm'), css: 'preprocessor' },         // preprocessor
-                { regex: new RegExp(this.getKeywords(keywords), 'g'), css: 'keyword' },         // keyword
-                { regex: new RegExp(this.getKeywords(keywords2), 'g'), css: 'keyword2' },       // keyword
+                { regex: /--.*$/gm, css: 'comments' },                      			// one line comments
+                { regex: /{-[\s\S]*?-}/gm, css: 'comments' },                      	        // multiline comments
+                { regex: dp.sh.RegexLib.DoubleQuotedString,  css: 'string' },   		// double quoted strings
+                { regex: new RegExp('^ *#.*', 'gm'), css: 'preprocessor' },			// preprocessor
+                { regex: new RegExp(this.GetKeywords(keywords), 'g'), css: 'keyword' },     	// keyword
+                { regex: new RegExp(this.GetKeywords(keywords2), 'g'), css: 'keyword2' },     	// keyword
                 { regex: new RegExp(_split(syntax_operators), 'g'), css: 'syntax_operators' },  // syntax operators
                 { regex: new RegExp(_split(common_operators), 'g'), css: 'common_operators' },  // common operators
                 { regex: /\b[0-9]+(\.[0-9]+)?\b/g, css: 'numbers' }, //numbers
                 { regex: /'.'/g, css:'char'}, //chars
                 { regex: /'\\\d+'/g, css:'char'},
                 { regex: /ghci&gt;/g, css:'ghci'}, //ghci prompt
-                { regex: /`(\w|')+`/g, css: 'common_operators' },                   // common operators
-                { regex: /\b[A-Z]\w*\b/g, css: 'type_constructors' },               // type constructors
+                { regex: /`(\w|')+`/g, css: 'common_operators' },  					// common operators
+                { regex: /\b[A-Z]\w*\b/g, css: 'type_constructors' },  				// type constructors
                          ];
 
         this.CssClass = 'dp-hs';
 
         this.Style = '.dp-hs .syntax_operators { color: #8ac6f2; }' +
                      '.dp-hs .common_operators { color: #8ac6f2; }' +
-                     ''; 
-    }
- 
-    Brush.prototype = new SyntaxHighlighter.Highlighter();
-    Brush.aliases   = ['haskell','hs'];
+                     '';
+};
 
-    SyntaxHighlighter.brushes.JScript = Brush;
-
-    if (exports) exports.Brush = Brush;
-})();
-
-
+dp.sh.Brushes.Haskell.prototype     = new dp.sh.Highlighter();
+dp.sh.Brushes.Haskell.Aliases       = ['haskell','hs'];
 // Local Variables:
 // mode: Haskell
 // indent-tabs-mode: t
 // c-file-style: "stroustrup"
 // End:
+

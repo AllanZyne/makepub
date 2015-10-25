@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package xmlns="http://www.idpf.org/2007/opf" xmlns:dc="http://purl.org/dc/elements/1.1/" unique-identifier="bookid" version="2.0">
+	<metadata>
+		<dc:identifier id="duokan-book-id" opf:scheme="UUID"><%= metadata.book_id %></dc:identifier>
+		<dc:identifier id="duokan-resource-id"><%= metadata.resource_id %></dc:identifier>
+		<dc:title><%- metadata.title %></dc:title>
+		<dc:creator opf:role="aut"><%= metadata.author %></dc:creator>
+		<dc:publisher><%- metadata.publisher %></dc:publisher>
+		<dc:rights><%- metadata.rights %></dc:rights>
+		<dc:language><%= metadata.language %></dc:language>
+		<meta name="cover" content="cover"/>
+	</metadata>
+	<manifest>
+		<item id="ncx" href="toc.ncx" media-type="text/xml"/>
+		<item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>
+		<item id="title" href="title.xhtml" media-type="application/xhtml+xml"/>
+		<item id="copyright" href="copyright.xhtml" media-type="application/xhtml+xml"/>
+<%
+	// console.log(manifest);
+	manifest.forEach(function(file, index) {
+		print(`<item id="${file.id}" href="${file.href}" media-type="${file.type}"/>`);
+	});
+%>
+	</manifest>
+	<spine toc="ncx">
+		<itemref idref="cover" linear="no"/>
+		<itemref idref="title"/>
+		<itemref idref="copyright"/>
+<%
+
+	catalog.forEach(function(filePath, index) {
+		var fileId = _.result(_.find(manifest, 'file', filePath), 'id');
+		print(`<itemref idref="${fileId}"/>`);
+	});
+%>
+	</spine>
+</package>

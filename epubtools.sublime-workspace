@@ -4,6 +4,70 @@
 		"selected_items":
 		[
 			[
+				"or",
+				"originalFile"
+			],
+			[
+				"man",
+				"manifest"
+			],
+			[
+				"cons",
+				"console"
+			],
+			[
+				"dir",
+				"dirFiles"
+			],
+			[
+				"fil",
+				"file"
+			],
+			[
+				"re",
+				"require"
+			],
+			[
+				"pa",
+				"path"
+			],
+			[
+				"epu",
+				"epubMetadata"
+			],
+			[
+				"ca",
+				"catalog"
+			],
+			[
+				"con",
+				"content"
+			],
+			[
+				"sh",
+				"styleSheet"
+			],
+			[
+				"tem",
+				"templatePath"
+			],
+			[
+				"sts",
+				"styleSheet"
+			],
+			[
+				"ep",
+				"epubMetadata"
+			],
+			[
+				"hi",
+				"highlighter	(Markdown.Extra.js)"
+			],
+			[
+				"code",
+				"codeblock"
+			],
+			[
 				"hea",
 				"header"
 			],
@@ -36,20 +100,12 @@
 				"cssCounter"
 			],
 			[
-				"pa",
-				"pairs"
-			],
-			[
 				"mea",
 				"media_type	(makeepub.js)"
 			],
 			[
 				"ma",
 				"manifest"
-			],
-			[
-				"con",
-				"console"
 			],
 			[
 				"r",
@@ -100,24 +156,12 @@
 				"fileTime"
 			],
 			[
-				"cons",
-				"console	(index.js)"
-			],
-			[
 				"wri",
 				"writeZip"
 			],
 			[
-				"ep",
-				"epubFile"
-			],
-			[
 				"buf",
 				"buffer"
-			],
-			[
-				"fil",
-				"fileOffset"
 			],
 			[
 				"en",
@@ -130,10 +174,6 @@
 			[
 				"len",
 				"length"
-			],
-			[
-				"re",
-				"return"
 			],
 			[
 				"wid",
@@ -304,13 +344,58 @@
 	"buffers":
 	[
 		{
-			"contents": "// jshint esnext: true, node: true\n\"use strict\";\n\nvar crc = require('crc');\nvar zlib = require('zlib');\nvar fs = require('fs');\n\n\nconst SIG_FILE_ENTRY = 0x04034B50;\nconst SIG_DIR_ENTRY  = 0x02014B50;\nconst SIG_EOCD = 0x06054B50;\n\n\nclass ZipRecord {\n	constructor(fileName, data, deflate) {\n		if (deflate !== false)\n			deflate = true;\n\n		this.version = 0x000A;\n		this.flags = 0x0000;\n		\n		var now = new Date();\n		this.fileTime = now.getHours() << 11 \n			| now.getMinutes() << 5\n			| now.getSeconds() >> 1;\n		this.fileDate = (now.getFullYear() - 1980 & 0x7f) << 9\n			| (now.getMonth() + 1) << 5\n			| now.getDate();\n\n		fileName = new Buffer(fileName);\n		this.fileName = fileName;\n		this.fileNameLength =  fileName.length;\n		this.extraFieldLength = 0x0000;\n		// console.log('fileNameLength', this.fileNameLength);\n		this.uncompressSize = data.length;\n		this.crc32 = crc.crc32(data);\n\n		if (! deflate) {\n			this.compresion = 0x0000;\n		} else {\n			this.compresion = 0x0008;\n			data = zlib.deflateRawSync(data);\n		}\n		\n		\n		console.log('crc32', (this.crc32).toString(16));\n		this.compressSize = data.length;\n		this.data = data;\n\n		this.versionMadeBy = 0x031E;\n		this.commentLength = 0x0000;\n		this.diskNumberStart = 0x0000;\n		this.internalAttributes = 0x0000;\n		this.externalAttributes = 0x81A40000;\n		// this.headerOffset = 0x0000;\n\n		this.fileEntrySize = 4*4 + 2*7 + this.fileNameLength + this.compressSize;\n		this.dirEntrySize = 4*6 + 2*11 + this.fileNameLength;\n	}\n\n	get size() {\n		return this.fileEntrySize + this.dirEntrySize;\n	}\n\n	writeFileRecord(buf, offset) {\n		// console.log('offset', offset);\n\n		offset = buf.writeUIntLE(SIG_FILE_ENTRY, offset, 4);\n		// console.log('SIG_FILE_ENTRY offset', offset);\n		offset = buf.writeUIntLE(this.version, offset, 2);\n		// console.log('version offset', offset);\n		offset = buf.writeUIntLE(this.flags, offset, 2);\n		// console.log('compresion offset', offset);\n		offset = buf.writeUIntLE(this.compresion, offset, 2);\n		// console.log('fileTime offset', offset);\n		offset = buf.writeUIntLE(this.fileTime, offset, 2);\n		// console.log('fileDate offset', offset);\n		offset = buf.writeUIntLE(this.fileDate, offset, 2);\n		// console.log('crc32 offset', offset);\n		offset = buf.writeUIntLE(this.crc32, offset, 4);\n		// console.log('compressSize offset', offset);\n		offset = buf.writeUIntLE(this.compressSize, offset, 4);\n		offset = buf.writeUIntLE(this.uncompressSize, offset, 4);\n		offset = buf.writeUIntLE(this.fileNameLength, offset, 2);\n		offset = buf.writeUIntLE(this.extraFieldLength, offset, 2);\n		// console.log('fileName offset', offset);\n		this.fileName.copy(buf, offset);\n		this.data.copy(buf, offset+this.fileNameLength);\n		\n		return this.fileEntrySize;\n	}\n\n	writeDirectoryRecord(buf, offset) {\n\n		offset = buf.writeUIntLE(SIG_DIR_ENTRY, offset, 4);\n		offset = buf.writeUIntLE(this.versionMadeBy, offset, 2);\n		offset = buf.writeUIntLE(this.version, offset, 2);\n		offset = buf.writeUIntLE(this.flags, offset, 2);\n		offset = buf.writeUIntLE(this.compresion, offset, 2);\n		offset = buf.writeUIntLE(this.fileTime, offset, 2);\n		offset = buf.writeUIntLE(this.fileDate, offset, 2);\n		offset = buf.writeUIntLE(this.crc32, offset, 4);\n		offset = buf.writeUIntLE(this.compressSize, offset, 4);\n		offset = buf.writeUIntLE(this.uncompressSize, offset, 4);\n		offset = buf.writeUIntLE(this.fileNameLength, offset, 2);\n		offset = buf.writeUIntLE(this.extraFieldLength, offset, 2);\n		offset = buf.writeUIntLE(this.commentLength, offset, 2);\n		offset = buf.writeUIntLE(this.diskNumberStart, offset, 2);\n		offset = buf.writeUIntLE(this.internalAttributes, offset, 2);\n		offset = buf.writeUIntLE(this.externalAttributes, offset, 4);\n		offset = buf.writeUIntLE(this.headerOffset, offset, 4);\n		this.fileName.copy(buf, offset);\n\n		return this.dirEntrySize;\n	}\n}\n\n\nvar MimetypeEntry = new ZipRecord('mimetype', new Buffer('application/epub+zip'), false);\nMimetypeEntry.headerOffset = 0x0000;\n\nclass EpubAchive {\n	constructor(archivePath) {\n		this._archivePath = archivePath;\n		\n		this.zipEntries = [MimetypeEntry];\n		this.entryOffset = MimetypeEntry.fileEntrySize;\n		this.fileSize = MimetypeEntry.size + 4*3+2*5;\n	}\n\n	addFile(filePath, content) {\n		var entry = new ZipRecord(filePath, content);\n		entry.headerOffset = this.entryOffset;\n		this.zipEntries.push(entry);\n		this.fileSize += entry.size;\n		this.entryOffset += entry.fileEntrySize;\n	}\n\n	writeBuffer() {\n		var buffer = new Buffer(this.fileSize),\n			fileOffset = 0,\n			directoryOffset = this.entryOffset;\n\n		console.log('fileSize', this.fileSize);\n		console.log('fileOffset', fileOffset);\n		console.log('directoryOffset', directoryOffset);\n\n		this.zipEntries.forEach(function(entry, index) {\n			fileOffset += entry.writeFileRecord(buffer, fileOffset);\n			directoryOffset += entry.writeDirectoryRecord(buffer, directoryOffset);\n		});\n \n 		console.log('fileOffset', fileOffset);\n		console.log('directoryOffset', directoryOffset);\n\n		var directorySize = directoryOffset - fileOffset;\n		fileOffset = directoryOffset;\n		directoryOffset = this.entryOffset;\n		var diskNumber = 0x0000;\n		var startDiskNumber = 0x0000;\n		var entriesOnDisk = this.zipEntries.length;\n		var entriesOnDirectory = this.zipEntries.length;\n		var commentLength = 0x0000;\n\n		fileOffset = buffer.writeUIntLE(SIG_EOCD, fileOffset, 4);\n		fileOffset = buffer.writeUIntLE(diskNumber, fileOffset, 2);\n		fileOffset = buffer.writeUIntLE(startDiskNumber, fileOffset, 2);\n		fileOffset = buffer.writeUIntLE(entriesOnDisk, fileOffset, 2);\n		fileOffset = buffer.writeUIntLE(entriesOnDirectory, fileOffset, 2);\n		fileOffset = buffer.writeUIntLE(directorySize, fileOffset, 4);\n		fileOffset = buffer.writeUIntLE(directoryOffset, fileOffset, 4);\n		fileOffset = buffer.writeUIntLE(commentLength, fileOffset, 2);\n\n		return buffer;\n	}\n\n	writeZip(archivePath, callback) {\n		var buffer = this.writeBuffer();\n		return fs.writeFile(archivePath, buffer, callback);\n	}\n}\n\n\n\n\nmodule.exports = EpubAchive;\n",
-			"file": "EpubAchive.js",
-			"file_size": 6110,
-			"file_write_time": 130870729394723608,
+			"file": "learnyouahaskell/chapter/chap1.md",
 			"settings":
 			{
-				"buffer_size": 5924,
+				"buffer_size": 8133,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "learnyouahaskell/metadata.yaml",
+			"settings":
+			{
+				"buffer_size": 740,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "learnyouahaskell/chapter/chap9.md",
+			"settings":
+			{
+				"buffer_size": 117409,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "makeepub.js",
+			"settings":
+			{
+				"buffer_size": 11036,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "learnyouahaskell/content.opf",
+			"settings":
+			{
+				"buffer_size": 4206,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "template/content.opf",
+			"settings":
+			{
+				"buffer_size": 1462,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "kenkyuu/小说/OEBPS/content.opf",
+			"settings":
+			{
+				"buffer_size": 3937,
 				"line_ending": "Windows"
 			}
 		}
@@ -322,25 +407,33 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 104.0,
-		"last_filter": "json",
+		"height": 392.0,
+		"last_filter": "pc",
 		"selected_items":
 		[
 			[
-				"json",
-				"JSON Reindent: reindent file or selection"
+				"pc",
+				"Package Control: List Packages"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Install Package"
 			],
 			[
 				"pci",
 				"Package Control: Install Package"
 			],
 			[
-				"for",
-				"CodeFormatter: Format as Javascript Syntax"
+				"sjs",
+				"Set Syntax: JavaScript"
 			],
 			[
-				"Package Control: ",
-				"Package Control: Disable Package"
+				"json",
+				"JSON Reindent: reindent file or selection"
+			],
+			[
+				"for",
+				"CodeFormatter: Format as Javascript Syntax"
 			],
 			[
 				"pcd",
@@ -367,7 +460,7 @@
 				"Package Control: Remove Package"
 			]
 		],
-		"width": 416.0
+		"width": 464.0
 	},
 	"console":
 	{
@@ -390,26 +483,41 @@
 	"expanded_folders":
 	[
 		"/D/Workspace/epubtools",
+		"/D/Workspace/epubtools/kenkyuu",
+		"/D/Workspace/epubtools/kenkyuu/小说",
 		"/D/Workspace/epubtools/kenkyuu/小说/OEBPS",
 		"/D/Workspace/epubtools/learnyouahaskell",
 		"/D/Workspace/epubtools/node_modules",
-		"/D/Workspace/epubtools/node_modules/jquery",
-		"/D/Workspace/epubtools/node_modules/pagedown",
-		"/D/Workspace/epubtools/template",
-		"/D/Workspace/epubtools/template/duokan"
+		"/D/Workspace/epubtools/template"
 	],
 	"file_history":
 	[
+		"/D/Workspace/epubtools/package.json",
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/SideBarEnhancements/Default (Windows).sublime-keymap",
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/User/Side Bar.sublime-settings",
+		"/D/Workspace/epubtools/test.html",
+		"/C/Users/Allan Zyne/Documents/RPGVXAce/The Ring of Udrai/Game.ini",
+		"/D/Workspace/epubtools/test.js",
+		"/D/Workspace/epubtools/test.md",
+		"/D/Workspace/epubtools/learnyouahaskell/chapter/chap9.md",
+		"/D/Workspace/epubtools/learnyouahaskell/chapter/chap8.md",
+		"/D/Workspace/epubtools/makeepub.js",
+		"/D/Workspace/epubtools/learnyouahaskell/metadata.yaml",
+		"/D/shadowshocks/pac.txt",
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/SublimeREPL/SublimeREPL.sublime-settings",
+		"/D/Workspace/epubtools/EpubAchive.js",
+		"/D/Workspace/epubtools/lib/Markdown.Extra.js",
+		"/D/Workspace/epubtools/lib/Markdown.js",
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/Better Completion/sbc-setting.sublime-settings",
+		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/SideBarEnhancements/Side Bar.sublime-settings",
 		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
 		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
 		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
 		"/C/Users/Allan Zyne/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
 		"/D/Workspace/epubtools/template/duokan/toc.ncx",
-		"/D/Workspace/epubtools/makeepub.js",
 		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/stylesheet_dec.css",
 		"/D/Workspace/epubtools/learnyouahaskell/stylesheet/stylesheet.less",
 		"/D/Workspace/epubtools/kenkyuu/小说/OEBPS/content.opf",
-		"/D/Workspace/epubtools/learnyouahaskell/metadata.yaml",
 		"/C/Users/allan_000/Downloads/Compressed/docbook-to-epub/my-epub.xml",
 		"/D/Workspace/epubtools/template/duokan/content.opf",
 		"/C/Users/allan_000/Downloads/Compressed/epub-raw-files/OEBPS/content.opf",
@@ -430,12 +538,10 @@
 		"/D/Workspace/epubtools/learnyouahaskell/style.less",
 		"/D/Workspace/epubtools/learnyouahaskell/reset.css",
 		"/D/Workspace/epubtools/learnyouahaskell/highlight.css",
-		"/D/Workspace/epubtools/package.json",
 		"/D/Workspace/epubtools/learnyouahaskell/style",
 		"/C/Users/allan_000/AppData/Roaming/Sublime Text 3/Packages/SublimeLinter/SublimeLinter.sublime-settings",
 		"/D/Workspace/epubtools/node_modules/crc/lib/crc32.js",
 		"/D/Workspace/epubtools/index.js",
-		"/D/Workspace/epubtools/EpubAchive.js",
 		"/C/Users/allan_000/Downloads/Compressed/tsrh.nfo",
 		"/C/Users/allan_000/Documents/图书/计算机/haskell/make.sh",
 		"/D/Workspace/epubtools/.jshintrc",
@@ -513,25 +619,11 @@
 		"/D/Workspace/转换文档/newn.json",
 		"/D/Workspace/转换文档/template/index.template.html",
 		"/D/Workspace/Master/README.md",
-		"/C/Users/allan_000/Downloads/gnome-builder-3.16.3.news",
-		"/D/Workspace/create-template-master/README.md",
-		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/KAGParser到绑定的实现（供参考）/KAGController.h",
-		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/KAGParser到绑定的实现（供参考）/KAGController.cpp",
-		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/KAGParser到绑定的实现（供参考）/TjsKAGController.h",
-		"/C/Users/allan_000/Documents/Tencent Files/498182651/FileRecv/KAGParser到绑定的实现（供参考）/TjsKAGController.cpp",
-		"/C/Users/allan_000/foo.hs",
-		"/D/Workspace/chinesize/AdvTry/DatParse/arcpack.asm",
-		"/D/Workspace/chinesize/AdvTry/DatParse/makedbg.bat",
-		"/D/Workspace/chinesize/AdvTry/DatParse/arcpack.inc",
-		"/D/Workspace/chinesize/.gitignore",
-		"/D/_galgame/Locale Emulator/LEProc.exe",
-		"/F/新日本语能力测试N1词汇必备（第2版・附赠MP3光盘）/N1必备001-062(あ-お行)/N1必备001-009(あ-あっぱく).lrc",
-		"/D/Silent Hill 2/data/etc/message/common_msg_e.mes",
-		"/D/_galgame/bke_creator/parser_api.txt"
+		"/C/Users/allan_000/Downloads/gnome-builder-3.16.3.news"
 	],
 	"find":
 	{
-		"height": 28.0
+		"height": 37.0
 	},
 	"find_in_files":
 	{
@@ -546,6 +638,17 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			" {.plain:hs name=\"code\"}",
+			"```plain",
+			" {.plain name=\"code\"}",
+			"plain",
+			"hintbox",
+			"<img src=\"(.*?)\" alt=\"(.*?)\" class=\".*?\" width=\"(.*?)\" height=\"(.*?)\".*?/>",
+			"<img src=\"(.*?)\" alt=\"(.*?)\" class=\".*?\" width=\"(.*?)\" height=\"(.*?)\"/>",
+			"<img src=\"(.*?)\" class=\".*?\" alt=\"(.*?)\" width=\"(.*?)\" height=\"(.*?)\"/>",
+			"<img src=\"(.*?)\" alt=\"(.*?)\" class=\".*?\"/>",
+			"<img class=\".*?\" src=\"(.*?)\" alt=\"(.*?)\"/>",
+			"epubMetadata",
 			"5e4dc1b6-ac2d-4b9e-a5b0-1f52151660bc",
 			"be82fd04-00a8-4e06-9074-46eca9cbfbcd",
 			"template_path",
@@ -655,6 +758,11 @@
 		"regex": false,
 		"replace_history":
 		[
+			"bash",
+			"```bash",
+			"plain",
+			"![$2 =$3*$4](../$1)",
+			"![$2](../$1)",
 			"2222",
 			"1111",
 			"",
@@ -708,36 +816,627 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "EpubAchive.js",
+					"file": "learnyouahaskell/chapter/chap1.md",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5924,
+						"buffer_size": 8133,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								5218,
-								5218
+								2524,
+								2524
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScriptNext - ES6 Syntax/JavaScriptNext.tmLanguage",
-							"translate_tabs_to_spaces": false
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/Markdown/Markdown.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "learnyouahaskell/metadata.yaml",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 740,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								726,
+								726
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/YAML/YAML.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 252.0,
+						"zoom_level": 1.0
+					},
 					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "learnyouahaskell/chapter/chap9.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 117409,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								36906,
+								36910
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/Markdown/Markdown.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 17543.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "makeepub.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 11036,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								5871,
+								5871
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/JavaScriptNext - ES6 Syntax/JavaScriptNext.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 4282.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "learnyouahaskell/content.opf",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 4206,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1003,
+								1003
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/XML/XML.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "template/content.opf",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1462,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1324,
+								1324
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/XML/XML.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 315.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "kenkyuu/小说/OEBPS/content.opf",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3937,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								891,
+								891
+							]
+						],
+						"settings":
+						{
+							"BracketHighlighterBusy": false,
+							"bh_regions":
+							[
+								"bh_square",
+								"bh_square_center",
+								"bh_square_open",
+								"bh_square_close",
+								"bh_square_content",
+								"bh_double_quote",
+								"bh_double_quote_center",
+								"bh_double_quote_open",
+								"bh_double_quote_close",
+								"bh_double_quote_content",
+								"bh_regex",
+								"bh_regex_center",
+								"bh_regex_open",
+								"bh_regex_close",
+								"bh_regex_content",
+								"bh_c_define",
+								"bh_c_define_center",
+								"bh_c_define_open",
+								"bh_c_define_close",
+								"bh_c_define_content",
+								"bh_curly",
+								"bh_curly_center",
+								"bh_curly_open",
+								"bh_curly_close",
+								"bh_curly_content",
+								"bh_angle",
+								"bh_angle_center",
+								"bh_angle_open",
+								"bh_angle_close",
+								"bh_angle_content",
+								"bh_tag",
+								"bh_tag_center",
+								"bh_tag_open",
+								"bh_tag_close",
+								"bh_tag_content",
+								"bh_default",
+								"bh_default_center",
+								"bh_default_open",
+								"bh_default_close",
+								"bh_default_content",
+								"bh_unmatched",
+								"bh_unmatched_center",
+								"bh_unmatched_open",
+								"bh_unmatched_close",
+								"bh_unmatched_content",
+								"bh_single_quote",
+								"bh_single_quote_center",
+								"bh_single_quote_open",
+								"bh_single_quote_close",
+								"bh_single_quote_content",
+								"bh_round",
+								"bh_round_center",
+								"bh_round_open",
+								"bh_round_close",
+								"bh_round_content"
+							],
+							"syntax": "Packages/XML/XML.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 819.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
 					"type": "text"
 				}
 			]
@@ -790,7 +1489,7 @@
 	"project": "epubtools.sublime-project",
 	"replace":
 	{
-		"height": 52.0
+		"height": 68.0
 	},
 	"save_all_on_build": true,
 	"select_file":

@@ -26,8 +26,12 @@ resource:
 # 图书的目录（直接用文件名时自动使用文件中的<hx>作为标题）
 # 支持格式：md、xhtml
 catalog: 
-    - chap1.md
-    - chap8.md
-    - chap9.md
+    - chapter/chap1.md
+    - chapter/chap8.md
+    - chapter/chap9.md
+
+markdown:
+    highlight:
+        
 
 ...

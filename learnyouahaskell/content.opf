@@ -1,0 +1,65 @@
+<?xml version='1.0' encoding='utf-8'?>
+<package 
+  xmlns="http://www.idpf.org/2007/opf" 
+  xmlns:dc="http://purl.org/dc/elements/1.1/" unique-identifier="bookid" version="2.0">
+  <metadata>
+    <dc:identifier id="duokan-book-id" opf:scheme="UUID">c9bbfe4b-fdb9-e173-9737-41a84fca96dc</dc:identifier>
+    <dc:identifier id="duokan-resource-id">107be05b-4da2-e555-dde1-1bc509b197b2</dc:identifier>
+    <dc:title>Learn You a Haskell for Great Good!</dc:title>
+    <dc:creator opf:role="aut">Miran Lipovača</dc:creator>
+    <dc:publisher></dc:publisher>
+    <dc:rights>&lt;p&gt;This work is licensed under a (Creative Commons Attribution-Noncommercial-Share Alike 3.0 Unported License)[&lt;a href=&quot;http://creativecommons.org/licenses/by-nc-sa/3.0/]&quot;&gt;http://creativecommons.org/licenses/by-nc-sa/3.0/]&lt;/a&gt; because I couldn&amp;#8217;t find a license with an even longer name.&lt;/p&gt;</dc:rights>
+    <dc:language>en-US</dc:language>
+    <meta name="cover" content="cover"/>
+  </metadata>
+  <manifest>
+    <item id="ncx" href="toc.ncx" media-type="text/xml"/>
+    <item id="cover" href="cover.xhtml" media-type="application/xhtml+xml"/>
+    <item id="title" href="title.xhtml" media-type="application/xhtml+xml"/>
+    <item id="copyright" href="copyright.xhtml" media-type="application/xhtml+xml"/>
+    <item id="image0" href="lyah/arguments.png" media-type="image/png"/>
+    <item id="image1" href="lyah/bg.png" media-type="image/png"/>
+    <item id="image2" href="lyah/binarytree.png" media-type="image/png"/>
+    <item id="image3" href="lyah/bird.png" media-type="image/png"/>
+    <item id="image4" href="lyah/boat.png" media-type="image/png"/>
+    <item id="image5" href="lyah/caveman.png" media-type="image/png"/>
+    <item id="image6" href="lyah/chainchomp.png" media-type="image/png"/>
+    <item id="image7" href="lyah/chicken.png" media-type="image/png"/>
+    <item id="image8" href="lyah/dognap.png" media-type="image/png"/>
+    <item id="image9" href="lyah/edd.png" media-type="image/png"/>
+    <item id="image10" href="lyah/file.png" media-type="image/png"/>
+    <item id="image11" href="lyah/functor.png" media-type="image/png"/>
+    <item id="image12" href="lyah/fx.png" media-type="image/png"/>
+    <item id="image13" href="lyah/gob.png" media-type="image/png"/>
+    <item id="image14" href="lyah/helloworld.png" media-type="image/png"/>
+    <item id="image15" href="lyah/jackofdiamonds.png" media-type="image/png"/>
+    <item id="image16" href="lyah/lazy.png" media-type="image/png"/>
+    <item id="image17" href="lyah/luggage.png" media-type="image/png"/>
+    <item id="image18" href="lyah/meekrat.png" media-type="image/png"/>
+    <item id="image19" href="lyah/note.jpg" media-type="image/jpeg"/>
+    <item id="image20" href="lyah/police.png" media-type="image/png"/>
+    <item id="image21" href="lyah/puppy.png" media-type="image/png"/>
+    <item id="image22" href="lyah/random.png" media-type="image/png"/>
+    <item id="image23" href="lyah/record.png" media-type="image/png"/>
+    <item id="image24" href="lyah/salad.png" media-type="image/png"/>
+    <item id="image25" href="lyah/streams.png" media-type="image/png"/>
+    <item id="image26" href="lyah/thefonz.png" media-type="image/png"/>
+    <item id="image27" href="lyah/timber.png" media-type="image/png"/>
+    <item id="image28" href="lyah/trafficlight.png" media-type="image/png"/>
+    <item id="image29" href="lyah/typefoo.png" media-type="image/png"/>
+    <item id="image30" href="lyah/yesno.png" media-type="image/png"/>
+    <item id="image31" href="lyah/yeti.png" media-type="image/png"/>
+    <item id="text0" href="stylesheet/stylesheet.css" media-type="text/css"/>
+    <item id="application0" href="chapter/chap1.xhtml" media-type="application/xhtml+xml"/>
+    <item id="application1" href="chapter/chap8.xhtml" media-type="application/xhtml+xml"/>
+    <item id="application2" href="chapter/chap9.xhtml" media-type="application/xhtml+xml"/>
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="cover" linear="no"/>
+    <itemref idref="title"/>
+    <itemref idref="copyright"/>
+    <itemref idref="application0"/>
+    <itemref idref="application1"/>
+    <itemref idref="application2"/>
+  </spine>
+</package>
