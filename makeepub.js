@@ -1,31 +1,17 @@
 // jshint esnext: true, node: true
 "use strict";
 
+
 var fs = require('fs');
 var path = require('path');
-var _ = require('underscore');
+var _ = require('lodash');
 var yaml = require('js-yaml');
 var less = require('less');
-var showdown  = require('showdown');
-var pd = require('pretty-data').pd; 
+var pd = require('pretty-data').pd;
+
+var mime = require('mime');
+
 var colors = require('colors/safe');
-
-var markdown = require('./lib/Markdown.js');
-
-
-var md = markdown(fs.readFileSync('test.md').toString());
-
-fs.writeFileSync('_test.md', md.makeHtml());
-
-
-
-return;
-
-var epubPath = "learnyouahaskell/";
-var epubTemplate = "duokan";
-var templatePath = 'template/' + epubTemplate + '/';
-
-
 colors.setTheme({
     silly: 'rainbow',
     input: 'grey',
@@ -39,11 +25,13 @@ colors.setTheme({
     error: 'red'
 });
 
-// var console_error = console.error;
-// console.error = function() {
-//  console_error.call(console, colors.error.apply(null, arguments));
-// }
+var markdown = require('./lib/Markdown.js');
 
+
+
+// -----------------------------------------------------------------------------
+// Helper Functions
+// -----------------------------------------------------------------------------
 function error() {
     console.error(colors.error.apply(null, arguments));
 }
@@ -65,8 +53,6 @@ function uuid() {
     return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4();
 }
 
-
-
 function* dirWalk(root) {
     var files = [];
 
@@ -86,13 +72,6 @@ function* dirWalk(root) {
 }
 
 
-
-function templateRules() {
-    var rule_path = 'template/' + epubTemplate + '/templateRule.txt';
-    var rule_content = fs.readFileSync(rule_path);
-
-}
-
 function applyTemplate(filePath, data) {
     var template = fs.readFileSync(filePath);
     var compiled = _.template(template.toString());
@@ -105,74 +84,143 @@ function nomalizePath(filePath) {
     return _filePath;
 }
 
+var ManifestIdCounter = {};
+function genManifest(file, originalFile) {
+    let fileMime = mime.lookup(file);
+    let fileType = fileMime.slice(0, fileMime.search('/'));
+    let fileId = _.get(ManifestIdCounter, fileType, 0);
+    ManifestIdCounter[fileType] = fileId + 1;
+
+    originalFile = originalFile || file;
+
+    return {
+        id: fileType + fileId,
+        href: file,
+        file: originalFile,
+        type: fileMime
+    };
+}
+
+// -----------------------------------------------------------------------------
+// Epub Functions
+// -----------------------------------------------------------------------------
+
+var epubPath = "learnyouahaskell/";
+var templatePath = 'template/';
 
 
 function* epubFiles() {
     
     var epubMetadata = yaml.safeLoad(fs.readFileSync(epubPath+'metadata.yaml', 'utf8'));
 
-    var manifest = [];
+    // -------------------------------------------------------------------------
+    // Metadata
+    // -------------------------------------------------------------------------
+    var metadata = epubMetadata.metadata;
+
+    metadata.book_id = metadata.book_id || uuid();
+    metadata.resource_id = metadata.resource_id || uuid();
+
+    metadata.rights = metadata.rights ? markdown(_.trim(metadata.rights)).makeHtml() : "";
+
+    // -------------------------------------------------------------------------
+    // Manifest
+    // -------------------------------------------------------------------------
+    var manifest = epubMetadata.manifest = [];
+    var idCounter = {};
+
     var xhtmlCounter = 0;
     var imageCounter = 0;
     var cssCounter = 0;
     var otherCounter = 0;
 
-
-    epubMetadata.book_id = uuid();
-    epubMetadata.resource_id = uuid();
-
-    // 样式表
-    var styleSheet = epubMetadata.metadata.stylesheet;
+    // -------------------------------------------------------------------------
+    // Resource
+    // -------------------------------------------------------------------------
+    var resource = epubMetadata.resource || {};
     
-    if (! styleSheet || styleSheet.length <= 0) {
+    if (resource.image) {
+        let paths = _.isArray(resource.image) ? resource.image : [resource.image],
+            files = [];
+
+        for (let path of paths) {
+            path = _.endsWith(path, '/') ? path : path+'/';
+            let dirFiles = _.chain(fs.readdirSync(epubPath+path)).map(x => path+x).value();
+            files = files.concat(dirFiles);
+        }
+
+        for (let file of files) {
+            // console.log(file);
+            manifest.push(genManifest(file));
+        }
+    }
+    
+    if (resource.font) {
+
+    }
+
+    if (resource.video) {
+
+    }
+
+    // -------------------------------------------------------------------------
+    // Style Sheet
+    // -------------------------------------------------------------------------
+    var styleSheet = metadata.stylesheet,
+        styleSheetFile,
+        styleSheetContent;
+
+    if (! styleSheet) {
         styleSheet = 'default.css';
-        info("使用默认的样式表：", styleSheet);
+        styleSheetFile = styleSheet;
+        styleSheetContent = fs.readFileSync(templatePath+styleSheet);
+
+        info("使用默认的样式文件");
     } else {
-        // styleSheet = epubPath+styleSheet;
+        let content = fs.readFileSync(epubPath+styleSheet),
+            ext = styleSheet.match(/\w*$/)[0];
+        
+        less.render(content.toString(), {
+            filename: path.resolve(epubPath+styleSheet),
+        }, function (err, output) {
+            if (err) throw err;
+            content = output.css;
+        });
+        
+        styleSheetFile = styleSheet.replace(/\w*$/, "css");
+        styleSheetContent = content;
     }
 
-    let content = fs.readFileSync(epubPath+styleSheet),
-        ext = styleSheet.match(/\w*$/)[0];
+    metadata.stylesheet = styleSheetFile;
+    yield [styleSheetFile, new Buffer(styleSheetContent)];
 
-    // print(path.resolve(epubPath+styleSheet));
+    manifest.push(genManifest(styleSheetFile, styleSheet));
 
-    switch (ext) {
-        case 'less':
-            less.render(content.toString(), {
-                filename: path.resolve(epubPath+styleSheet),
-                paths: ['.']
-            }, function (err, output) {
-                if (err) throw err;
-                content = output.css;
-            });
-            epubMetadata.metadata.stylesheet = styleSheet.replace(/\w*$/, "css");
-            yield [styleSheet.replace(/\w*$/, "css"), new Buffer(content)];
-            break;
-    }
- 
-    // 文件目录
-    if (! epubMetadata.catalog) {
+    // Markdown
+    var catalog = epubMetadata.catalog;
+    if (! catalog) {
         throw new Error("metadata.yaml 中没有定义 catalog");
     }
 
-    var converter = new showdown.Converter();
-
     // console.log(epubMetadata.catalog);
-    for (let filePath of epubMetadata.catalog) {
-        try {
-            let content = fs.readFileSync(epubPath+filePath),
-                ext = filePath.match(/\w*$/)[0];
 
-            switch (ext) {
-                case 'md':
-                    epubMetadata.content = converter.makeHtml(content.toString());
-                    content = applyTemplate(templatePath+'chapter.xhtml', epubMetadata);
-                    yield [filePath.replace(/\w*$/, "xhtml"), new Buffer(content)];
-                    break;
-            }
-        } catch (err) {
-            console.log(err);
+    for (let filePath of catalog) {
+        let content = fs.readFileSync(epubPath+filePath),
+            ext = filePath.match(/\w*$/)[0];
+
+        switch (ext) {
+            case 'md':
+                var md = markdown(content.toString());
+                epubMetadata.content = md.makeHtml();
+                content = applyTemplate(templatePath+'chapter.xhtml', epubMetadata);
+                
+                break;
         }
+
+        let file = filePath.replace(/\w*$/, "xhtml");
+        yield [file, new Buffer(content)];
+
+        manifest.push(genManifest(file, filePath));
     }
 
 
@@ -278,11 +326,8 @@ function* epubFiles() {
     //  manifest.push(info);
     // }
 
-    // var content = applyTemplate(templatePath+'content.opf', epubMetadata);
-    // if (! content)
-    //  return;
-    // // console.log(content)
-    // yield ['content.opf', new Buffer(pd.xml(content))];
+    var content = applyTemplate(templatePath+'content.opf', epubMetadata);
+    yield ['content.opf', new Buffer(pd.xml(content))];
 
     // content = applyTemplate(templatePath+'toc.ncx', epubMetadata);
     // if (! content)
