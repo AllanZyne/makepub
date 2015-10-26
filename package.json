@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "description": "A tool to make epub book.",
   "main": "index.js",
+  "bin": {
+    "makeepub": "./makeepub.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -10,12 +13,12 @@
     "type": "git",
     "url": "git+https://github.com/DrsExplorer/epubtools.git"
   },
-  "author": "",
-  "license": "BSD",
+  "author": "Allan Zyne",
+  "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/DrsExplorer/epub/issues"
+    "url": "https://github.com/DrsExplorer/epubtools/issues"
   },
-  "homepage": "https://github.com/DrsExplorer/epub#readme",
+  "homepage": "https://github.com/DrsExplorer/epubtools#readme",
   "dependencies": {
     "colors": "^1.1.2",
     "crc": "^3.3.0",
