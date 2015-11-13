@@ -2,7 +2,6 @@
   "name": "epubtools",
   "version": "0.0.0",
   "description": "A tool to make epub book.",
-  "main": "index.js",
   "bin": {
     "makeepub": "./makeepub.js"
   },
@@ -27,6 +26,7 @@
     "less": "^2.5.3",
     "lodash": "^3.10.1",
     "mime": "^1.3.4",
+    "minimist": "^1.2.0",
     "pretty-data": "^0.40.0"
   }
 }

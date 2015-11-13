@@ -8,7 +8,7 @@ var yaml = require('js-yaml');
 var less = require('less');
 var pd = require('pretty-data').pd;
 
-var EpubAchive = require('../lib/EpubAchive.js');
+var EpubAchive = require('./lib/EpubAchive.js');
 
 var colors = require('colors/safe');
 colors.setTheme({
@@ -59,7 +59,7 @@ if (resource.image) {
     }
 
     for (let file of files) {
-        epubAchive.addFile(file, fs.readFileSync(file));        
+        epubAchive.addFile(file, fs.readFileSync(epubPath+file));        
     }
 }
 
@@ -72,5 +72,29 @@ if (resource.video) {
 }
 
 
+var catalog = epubMetadata.catalog;
+for (var filePath of catalog) {
+    let file = filePath.replace(/\w*$/, "xhtml");
+    epubAchive.addFile(file, fs.readFileSync(epubPath+file));
+}
+
+var metadata = epubMetadata.metadata;
+
+var styleSheet = metadata.stylesheet;
+var file = styleSheet.replace(/\w*$/, "css");
+epubAchive.addFile(file, fs.readFileSync(epubPath+file));
 
 
+epubAchive.addFile(metadata.cover, fs.readFileSync(epubPath+metadata.cover));
+
+
+epubAchive.addFile('content.opf', fs.readFileSync(epubPath+'content.opf'));
+epubAchive.addFile('toc.ncx', fs.readFileSync(epubPath+'toc.ncx'));
+epubAchive.addFile('META-INF/container.xml', fs.readFileSync(epubPath+'META-INF/container.xml'));
+
+
+
+
+
+
+epubAchive.writeZip();
