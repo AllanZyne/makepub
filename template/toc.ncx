@@ -12,37 +12,33 @@
 	</docTitle>
 	<navMap>
 <%
-var headers = [];
+var headers = _.flatten(_.map(catalog, filePath => topics[filePath]));
 var order = 0;
 
-catalog.forEach(function(filePath) {
-	var info = _.find(manifest, info => info.path === filePath);
-	info.headers.forEach(function(header) {
-		headers.push(header);
-	});
-});
+// console.log(headers);
 
 (function navPoint(level) {
 	var header = headers[order];
-	
+
 	while (header && header.level === level) {
 		order++;
 
-
-print(`<navPoint id="navpoint-${order}" playOrder="${order}">
-		<navLabel>
-			<text>${header.text}</text>
-		</navLabel>
-		<content src="${header.file}"/>\n`);
+		print(`<navPoint id="navpoint-${order}" playOrder="${order}">
+			   <navLabel>
+				   <text>${header.text}</text>
+			   </navLabel>
+			   <content src="${header.src}"/>
+		`);
 		
 		header = headers[order];
 		if (header && header.level === level+1) {
 			navPoint(level+1);
 		}
-print(`\t</navPoint>`);
+		print(`</navPoint>`);
 	}
 
 })(1);
+
 %>
 	</navMap>
 </ncx>
