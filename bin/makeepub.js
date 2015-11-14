@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // jshint esnext: true, node: true
 "use strict";
 
@@ -35,13 +36,14 @@ colors.setTheme({
     data: 'grey',
     help: 'cyan',
     warn: 'yellow',
-    debug: 'blue',
+    debug: 'green',
     error: 'red'
 });
 
-var markdown = require('./lib/Markdown.js');
-
 var argv = require('minimist')(process.argv.slice(2));
+
+var markdown = require('../lib/Markdown.js');
+var EpubAchive = require('../lib/EpubAchive.js');
 
 
 // -----------------------------------------------------------------------------
@@ -57,6 +59,14 @@ function print() {
 
 function info() {
     console.info(colors.info.apply(null, arguments));
+}
+
+function warn() {
+    console.error(colors.warn.apply(null, arguments));
+}
+
+function debug() {
+    console.error(colors.debug.apply(null, arguments));
 }
 
 function uuid() {
@@ -88,6 +98,11 @@ function* dirWalk(root) {
 
 
 function applyTemplate(filePath, data) {
+    if (! fs.existsSync(filePath)) {
+        warn(`模板文件${filePath}不存在！`);
+        return;
+    }
+    
     var template = fs.readFileSync(filePath);
     var compiled = _.template(template.toString());
     // console.log(data);
@@ -120,8 +135,8 @@ function genManifest(file, originalFile) {
 // Epub Functions
 // -----------------------------------------------------------------------------
 
-var epubPath = "learnyouahaskell/";
-var templatePath = 'template/';
+var epubPath;
+var templatePath = path.resolve(path.join(__dirname, '../template/'));
 
 
 function* epubFiles() {
@@ -154,6 +169,10 @@ function* epubFiles() {
 
         for (let path of paths) {
             path = _.endsWith(path, '/') ? path : path+'/';
+            if (! fs.existsSync(epubPath+path)) {
+                warn(`图片文件夹${path}未找到！`);
+                continue;
+            }
             let dirFiles = _.chain(fs.readdirSync(epubPath+path)).map(x => path+x).value();
             files = files.concat(dirFiles);
         }
@@ -172,6 +191,7 @@ function* epubFiles() {
 
     }
 
+    debug('[[STYLESHEET]]');
     // -------------------------------------------------------------------------
     // Style Sheet
     // -------------------------------------------------------------------------
@@ -180,15 +200,16 @@ function* epubFiles() {
         styleSheetContent;
 
     if (! styleSheet) {
+        info("使用默认的样式文件");
+
         styleSheet = 'default.css';
         styleSheetFile = styleSheet;
-        styleSheetContent = fs.readFileSync(templatePath+styleSheet);
-
-        info("使用默认的样式文件");
+        if (! fs.existsSync(path.join(templatePath, styleSheet))) {
+            throw new Error('无法找到默认的样式文件！');
+        }
+        styleSheetContent = fs.readFileSync(path.join(templatePath, styleSheet));
     } else {
-        let content = fs.readFileSync(epubPath+styleSheet),
-            ext = styleSheet.match(/\w*$/)[0];
-        var cssOutput = '';
+        let content = fs.readFileSync(epubPath+styleSheet);
     
         styleSheetFile = styleSheet.replace(/\w*$/, "css");
         styleSheetContent = yield less.render(content.toString(), {
@@ -201,29 +222,39 @@ function* epubFiles() {
 
     manifest.push(genManifest(styleSheetFile, styleSheet));
 
+    debug('[[CATALOG]]');
     // Markdown
     var catalog = epubMetadata.catalog;
     if (! catalog) {
         throw new Error("metadata.yaml 中没有定义 catalog");
     }
-
-    var topics = epubMetadata.topics = {};
+    
+    var topics = epubMetadata.topics = {};   // for toc.ncx
 
     // console.log(epubMetadata.catalog);
     var toc = [0, 0, 0, 0, 0, 0, 0];
 
     for (let filePath of catalog) {
+        if (! fs.existsSync(epubPath+filePath)) {
+            warn(`"${filePath}"文件不存在：${epubPath+filePath}"`);
+            continue;
+        }
         let content = fs.readFileSync(epubPath+filePath).toString(),
             ext = filePath.match(/\w*$/)[0];
-
+        
         switch (ext) {
             case 'md':
+                // print(content);
                 var md = markdown(content, epubMetadata.markdown);
+                
                 epubMetadata.content = md.makeHtml();
-                content = applyTemplate(templatePath+'chapter.xhtml', epubMetadata);
+                content = applyTemplate(path.join(templatePath, 'chapter.xhtml'), epubMetadata);
+                if (! content)
+                    continue;
+                
                 var _topics = _.get(topics, filePath, []);
                 topics[filePath] = _topics;
-
+                
                 content = content.replace(/<h([1-6])(.*?)>(.*?)<\/h\1>/gm, function(wholeMatch, level, attrs, title) {
                     var id;
                     level = parseInt(level);
@@ -255,17 +286,18 @@ function* epubFiles() {
 
                 break;
         }
-
         let file = filePath.replace(/\w*$/, "xhtml");
         yield [file, new Buffer(content)];
 
         manifest.push(genManifest(file, filePath));
     }
 
-    var content = applyTemplate(templatePath+'content.opf', epubMetadata);
+    debug('[[CONTENT.OPF]]');
+    var content = applyTemplate(path.join(templatePath, 'content.opf'), epubMetadata);
     yield ['content.opf', new Buffer(pd.xml(content))];
 
-    content = applyTemplate(templatePath+'toc.ncx', epubMetadata);
+    debug('[[TOC.NCX]]');
+    content = applyTemplate(path.join(templatePath, 'toc.ncx'), epubMetadata);
     if (! content)
      return;
 
@@ -273,37 +305,104 @@ function* epubFiles() {
 
 }
 
-
-
-
-try {
+function convert() {
     var gen = epubFiles();
     var rst = gen.next();
+    
     (function next() {
         if (rst.done)
             return;
         var file = rst.value;
         if (_.isArray(file)) {
             info(epubPath + file[0]);
-            fs.writeFile(epubPath + file[0], file[1]);
+            fs.writeFileSync(epubPath + file[0], file[1]);
             rst = gen.next();
             next();
         } else {
-            // print(file);
             file.then(function(output) {
-                // print(output.css);
                 rst = gen.next(output.css);
                 next();
             });
         }    
     })();
+}
+
+function pack() {
+    var fileName = path.resolve(epubPath, '../') + '/' + path.basename(epubPath) + '.epub';
+    var epubAchive = new EpubAchive(fileName);
+    var epubMetadata = yaml.safeLoad(fs.readFileSync(epubPath+'metadata.yaml', 'utf8'));
     
-} catch(e) {
-    // console.error(e);
-    throw e;
+    var resource = epubMetadata.resource;
+    
+    if (resource.image) {
+        let paths = _.isArray(resource.image) ? resource.image : [resource.image],
+            files = [];
+    
+        for (let file of paths) {
+            file = _.endsWith(file, '/') ? file : file+'/';
+            let dirFiles = _.chain(fs.readdirSync(epubPath+file)).map(x => file+x).value();
+            files = files.concat(dirFiles);
+        }
+    
+        for (let file of files) {
+            epubAchive.addFile(file, fs.readFileSync(epubPath+file));        
+        }
+    }
+    
+    if (resource.font) {
+    
+    }
+    
+    if (resource.video) {
+    
+    }
+    
+    var catalog = epubMetadata.catalog;
+    for (var filePath of catalog) {
+        let file = filePath.replace(/\w*$/, "xhtml");
+        epubAchive.addFile(file, fs.readFileSync(epubPath+file));
+    }
+    
+    var metadata = epubMetadata.metadata;
+    
+    var styleFile = metadata.stylesheet;
+    if (styleFile) {
+        let file = styleFile.replace(/\w*$/, "css");
+        epubAchive.addFile(file, fs.readFileSync(epubPath+file));
+    }
+
+    if (metadata.cover)
+        epubAchive.addFile(metadata.cover, fs.readFileSync(epubPath+metadata.cover));
+    
+    epubAchive.addFile('content.opf', fs.readFileSync(epubPath+'content.opf'));
+    epubAchive.addFile('toc.ncx', fs.readFileSync(epubPath+'toc.ncx'));
+    
+    epubAchive.addFile('META-INF/container.xml', fs.readFileSync(path.join(templatePath, 'META-INF/container.xml')));
+    
+    epubAchive.writeZip();
 }
 
 
-
-// epubFile.writeZip('my_book.zip');
+if (argv._.length > 0) {
+    epubPath = path.join(process.cwd(), argv._[0]);
+    
+    if (_.endsWith(epubPath, '\\')) {
+        epubPath = epubPath.slice(epubPath.length-1);
+    }
+    if (! _.endsWith(epubPath, '/'))
+        epubPath += '/';
+    epubPath = epubPath.replace(/\\/g, '/');
+    
+    print(__dirname)
+    
+    try {
+    print(epubPath);
+    convert();
+    } catch (e) {
+        print(e);
+    }
+    pack();
+} else {
+    print("輸入制作epub的文件夾名");
+}
 

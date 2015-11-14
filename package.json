@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "description": "A tool to make epub book.",
   "bin": {
-    "makeepub": "./makeepub.js"
+    "makeepub": "./bin/makeepub.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
