@@ -1,21 +1,7 @@
 #!/usr/bin/env node
-// jshint esnext: true, node: true
 "use strict";
 
-/**
- *
- *
- *  makeepub <ebook_dir> 
- *
- * -t 模板名
- * -D 在目录下生成epub文件信息
- * 
- * TODO:
- *     解析命令行参数 
- *     
- * 
- */
-
+// jshint esnext: true, node: true
 
 var fs = require('fs');
 var path = require('path');
@@ -422,3 +408,21 @@ if (argv._.length > 0) {
     print("輸入制作epub的文件夾名");
 }
 
+
+/**
+ * makeepub for duokan
+ * 
+ * makeepub [options] <source_dir> [out_file（默认与文件夹同名.epub）]
+ * 
+ * -b <build_dir> _build     编译路径 
+ * -t <theme>     duokan     使用的主题（默认）
+ * -m <path> metadata路径(默认=out_dir)
+ *
+ * -c 只编译，不打包
+ * -p 只打包，不编译
+ * 
+ *
+ * -a 全部更新，默认只更新改动文件
+ * -j <N>  多线程编译
+ * 
+ */
