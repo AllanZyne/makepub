@@ -291,10 +291,22 @@ function* epubFiles() {
 
         manifest.push(genManifest(file, filePath));
     }
+    
+    debug('[[COVER/COPYRIGHT/PREFACE]]');
+    var content = applyTemplate(path.join(templatePath, 'cover.xhtml'), epubMetadata);
+    yield ['cover.xhtml', new Buffer(pd.xml(content))];
+    
+    content = applyTemplate(path.join(templatePath, 'copyright.xhtml'), epubMetadata);
+    yield ['copyright.xhtml', new Buffer(pd.xml(content))];
+    
+    content = applyTemplate(path.join(templatePath, 'preface.xhtml'), epubMetadata);
+    yield ['preface.xhtml', new Buffer(pd.xml(content))];
+
 
     debug('[[CONTENT.OPF]]');
-    var content = applyTemplate(path.join(templatePath, 'content.opf'), epubMetadata);
+    content = applyTemplate(path.join(templatePath, 'content.opf'), epubMetadata);
     yield ['content.opf', new Buffer(pd.xml(content))];
+
 
     debug('[[TOC.NCX]]');
     content = applyTemplate(path.join(templatePath, 'toc.ncx'), epubMetadata);
@@ -377,6 +389,10 @@ function pack() {
     epubAchive.addFile('content.opf', fs.readFileSync(epubPath+'content.opf'));
     epubAchive.addFile('toc.ncx', fs.readFileSync(epubPath+'toc.ncx'));
     
+    epubAchive.addFile('preface.xhtml', fs.readFileSync(epubPath+'preface.xhtml'));
+    epubAchive.addFile('copyright.xhtml', fs.readFileSync(epubPath+'copyright.xhtml'));
+    epubAchive.addFile('cover.xhtml', fs.readFileSync(epubPath+'cover.xhtml'));
+    
     epubAchive.addFile('META-INF/container.xml', fs.readFileSync(path.join(templatePath, 'META-INF/container.xml')));
     
     epubAchive.writeZip();
@@ -393,7 +409,7 @@ if (argv._.length > 0) {
         epubPath += '/';
     epubPath = epubPath.replace(/\\/g, '/');
     
-    print(__dirname)
+    print(__dirname);
     
     try {
     print(epubPath);
