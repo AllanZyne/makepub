@@ -222,7 +222,7 @@ function* epubFiles() {
 
     for (let filePath of catalog) {
         if (! fs.existsSync(epubPath+filePath)) {
-            warn(`"${filePath}"文件不存在：${epubPath+filePath}"`);
+            warn(`"${filePath}"文件不存在：${epubPath+filePath}`);
             continue;
         }
         let content = fs.readFileSync(epubPath+filePath).toString(),
@@ -303,26 +303,31 @@ function* epubFiles() {
 
 }
 
-function convert() {
-    var gen = epubFiles();
-    var rst = gen.next();
+function build(build_dir) {
+    var it = epubFiles();
     
-    (function next() {
-        if (rst.done)
+    function handle(value) {
+        if (_.isArray(value)) {
+            info(epubPath + value[0]);
+            fs.writeFileSync(path.join(build_dir, value[0]), value[1]);            
             return;
-        var file = rst.value;
-        if (_.isArray(file)) {
-            info(epubPath + file[0]);
-            fs.writeFileSync(epubPath + file[0], file[1]);
-            rst = gen.next();
-            next();
-        } else {
-            file.then(function(output) {
-                rst = gen.next(output.css);
-                next();
-            });
-        }    
-    })();
+        }  
+        
+        // less
+        return value.css;
+    }
+    
+    function next(result) {
+        if (result.done)
+            return result.value;
+        
+        return result.value.then(
+            (value) => next(it.next(handle(value))),
+            (error) => next(it.throw(error))
+        );
+    }
+    
+    next(it.next());
 }
 
 function pack() {
