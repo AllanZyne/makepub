@@ -23,14 +23,16 @@
 %>
 	</manifest>
 	<spine toc="ncx">
-		<itemref idref="cover" linear="no"/>
+		<itemref idref="cover"/>
 		<itemref idref="preface"/>
 		<itemref idref="copyright"/>
 <%
-
-	catalog.forEach(function(filePath, index) {
-		var fileId = _.result(_.find(manifest, 'file', filePath), 'id');
-		print(`<itemref idref="${fileId}"/>`);
+	_.chain(manifest)
+	 .filter({ type: 'application/xhtml+xml' })
+	 .pluck('id')
+	 .value()
+	 .forEach(function(id) {
+		print(`<itemref idref="${id}"/>`);
 	});
 %>
 	</spine>

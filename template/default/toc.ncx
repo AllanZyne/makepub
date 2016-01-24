@@ -12,7 +12,12 @@
 	</docTitle>
 	<navMap>
 <%
-var headers = _.flatten(_.map(catalog, filePath => topics[filePath]));
+
+var headers = _(tocs).map((t) => { 
+    return _.map(t.headers, (h) => {
+        return { level: h[0], src: t.file+'#'+h[1], text: h[2] };
+    });
+}).flatten().value();
 var order = 0;
 
 // console.log(headers);
