@@ -136,7 +136,7 @@ var chapterTemplateCompiled;
 var styleTemplate;
 
 var templateFile = async(function*(stylefile, chapters) {
-    
+
     // 合并样式
     info('[[样式文件]]');
 
@@ -144,20 +144,20 @@ var templateFile = async(function*(stylefile, chapters) {
     let styleContent = yield renderStyle(tplStyleFile);
     let epbStyleFile = joinPath(EpubPath, stylefile);
     styleContent += yield renderStyle(epbStyleFile);
-    
+
     info(stylefile);
     Manifest.push(genManifest(changeExt(stylefile, 'css')));
 
     let styleFile = changeExt(stylefile, 'css');
     styleFile = joinPath(BuildPath, styleFile);
-    
+
     debug(styleFile);
     yield writeFile(styleFile, styleContent);
-    
+
     // 处理markdown
     // 关系到toc的问题
     info('[[文本文件]]');
-    
+
     // console.log(chapters);
 
     for (let chpFile of chapters) {
@@ -174,9 +174,9 @@ var templateFile = async(function*(stylefile, chapters) {
         // console.log(xhtmlHeaders);
 
         Manifest.push(genManifest(xhtmlFile));
-        
+
         xhtmlFile = joinPath(BuildPath, xhtmlFile);
-        
+
         xhtmlContent = yield applyTemplate(joinPath(TemplatePath, 'chapter.xhtml'), {
             metadata: { stylesheet: '../' + changeExt(stylefile, 'css') },
             content: xhtmlContent,
@@ -185,7 +185,7 @@ var templateFile = async(function*(stylefile, chapters) {
         debug(xhtmlFile);
         yield writeFile(xhtmlFile, xhtmlContent);
     }
-    
+
     // console.dir(Manifest);
 });
 
@@ -198,9 +198,9 @@ var load = async(function*() {
     if (! ifExist) {
         throw new Error("元数据文件不存在！！");
     }
-    
+
     info('加载元数据...' + EpubMetaDataPath);
-    
+
     var epubMetadataContent = yield readFile(EpubMetaDataPath);
     var epubMetadata = yaml.safeLoad(epubMetadataContent);
     if (!epubMetadata)
@@ -220,17 +220,17 @@ var load = async(function*() {
 
     ResourceDirs = EpubMetadata.resource || [];
     ResourceFiles = [];
-    
+
     for (let dir of ResourceDirs) {
         let rdir = joinPath(EpubPath, dir);
         let ifExist = yield access(rdir);
         if (! ifExist)
             continue;
         let rfiles = yield readdir(rdir);
-        
+
         ResourceFiles = ResourceFiles.concat(rfiles.map((f => path.join(dir, f))));
     }
-    
+
     return true;
 });
 
@@ -259,7 +259,7 @@ var build = async(function*() {
     // -------------------------------------------------------------------------
     // Template
     // -------------------------------------------------------------------------
-    
+
     yield templateFile(Metadata.stylesheet, EpubMetadata.catalog);
 
     Metadata.stylesheet = changeExt(Metadata.stylesheet, 'css');
@@ -350,65 +350,6 @@ var pack = async(function*() {
     epubAchive.writeZip();
 });
 
-// function pack() {
-//     var fileName = path.resolve(epubPath, '../') + '/' + path.basename(epubPath) + '.epub';
-//     var epubAchive = new EpubAchive(fileName);
-//     var EpubMetadata = yaml.safeLoad(fs.readFileSync(epubPath+'metadata.yaml', 'utf8'));
-    
-//     var resource = epubMetadata.resource;
-    
-//     if (resource.image) {
-//         let paths = _.isArray(resource.image) ? resource.image : [resource.image],
-//             files = [];
-    
-//         for (let file of paths) {
-//             file = _.endsWith(file, '/') ? file : file+'/';
-//             let dirFiles = _.chain(fs.readdirSync(epubPath+file)).map(x => file+x).value();
-//             files = files.concat(dirFiles);
-//         }
-    
-//         for (let file of files) {
-//             epubAchive.addFile(file, fs.readFileSync(epubPath+file));        
-//         }
-//     }
-    
-//     if (resource.font) {
-    
-//     }
-    
-//     if (resource.video) {
-    
-//     }
-    
-//     var catalog = epubMetadata.catalog;
-//     for (var filePath of catalog) {
-//         let file = filePath.replace(/\w*$/, "xhtml");
-//         epubAchive.addFile(file, fs.readFileSync(epubPath+file));
-//     }
-    
-//     var metadata = epubMetadata.metadata;
-    
-//     var styleFile = metadata.stylesheet;
-//     if (styleFile) {
-//         let file = styleFile.replace(/\w*$/, "css");
-//         epubAchive.addFile(file, fs.readFileSync(epubPath+file));
-//     }
-
-//     if (metadata.cover)
-//         epubAchive.addFile(metadata.cover, fs.readFileSync(epubPath+metadata.cover));
-    
-//     epubAchive.addFile('content.opf', fs.readFileSync(epubPath+'content.opf'));
-//     epubAchive.addFile('toc.ncx', fs.readFileSync(epubPath+'toc.ncx'));
-    
-//     epubAchive.addFile('preface.xhtml', fs.readFileSync(epubPath+'preface.xhtml'));
-//     epubAchive.addFile('copyright.xhtml', fs.readFileSync(epubPath+'copyright.xhtml'));
-//     epubAchive.addFile('cover.xhtml', fs.readFileSync(epubPath+'cover.xhtml'));
-    
-//     epubAchive.addFile('META-INF/container.xml', fs.readFileSync(path.join(templatePath, 'META-INF/container.xml')));
-    
-//     epubAchive.writeZip();
-// }
-
 
 // =============================================================================
 // 解析运行参数
@@ -425,7 +366,7 @@ if (argv.t) {
     else
         TemplatePath = path.isAbsolute(t) ? t : joinPath(CwdDir, t);
 }
-    
+
 if (argv.m) {
     let m = argv.m;
     EpubMetaDataPath = path.isAbsolute(m) ? m : joinPath(CwdDir, m);
@@ -450,7 +391,7 @@ if (argv.b) {
 
 var o = argv_[1];
 if (o)
-   OutputPath = ""; 
+   OutputPath = "";
 
 EpubMetaDataPath = joinPath(EpubPath, 'metadata.yaml');
 
@@ -479,31 +420,43 @@ if (argv.c || argv.p) {
 function help() {
 print(`
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
- * 
+ *
  * makeepub for duokan
- * 
- * makeepub [options] <epubdir> [out_file（默认与文件夹同名.epub）]
- * 
- * -b <builddir>  _build     编译路径 
- * -t <theme>     duokan     使用的主题（默认）
- * -m <path> metadata路径(默认=out_dir)
+ *
+ * makeepub [options] [epub_dir]
+ *
+ * Options
+ * ------------------------------------------------
+ *
+ * -b <build_dir>  _build     编译路径
+ * -t <theme>      duokan     使用的主题
+ * -m <path>                  metadata路径
  *
  * -c 只编译，不打包
  * -p 只打包，不编译
- * 
  *
  * -a 全部更新，默认只更新改动文件
  * -j <N>  多线程编译
- * 
+ *
  *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 `);
 process.exit();
 }
 
 
-/**
- * 
- * 进度：
- *   
- * 
- */
+/*
+
+!!!
+===========
+自定义脚本
+主题目录
+
+!!
+============
+只更新变动文件
+
+!
+============
+
+
+*/
