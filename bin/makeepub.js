@@ -3,39 +3,39 @@
 
 // jshint esnext: true, node: true
 
-var fs = require('fs');
-var path = require('path');
-var _ = require('lodash');
-var yaml = require('js-yaml');
+const fs = require('fs');
+const path = require('path');
+const _ = require('lodash');
+const yaml = require('js-yaml');
 
-var pd = require('pretty-data').pd;
+const pd = require('pretty-data').pd;
 
-var markdown = require('../lib/Markdown.js');
-var EpubAchive = require('../lib/EpubAchive.js');
+const markdown = require('../lib/Markdown.js');
+const EpubAchive = require('../lib/EpubAchive.js');
 
-var print = require('../lib/Utils.js').print;
-var info = require('../lib/Utils.js').info;
-var debug = require('../lib/Utils.js').debug;
-var warn = require('../lib/Utils.js').warn;
-var joinPath = require('../lib/Utils.js').joinPath;
-var changeExt = require('../lib/Utils.js').changeExt;
-var uuid = require('../lib/Utils.js').uuid;
-var genManifest = require('../lib/Utils.js').genManifest;
-var async = require('../lib/Utils.js').async;
+const print = require('../lib/Utils.js').print;
+const info = require('../lib/Utils.js').info;
+const debug = require('../lib/Utils.js').debug;
+const warn = require('../lib/Utils.js').warn;
+const joinPath = require('../lib/Utils.js').joinPath;
+const changeExt = require('../lib/Utils.js').changeExt;
+const uuid = require('../lib/Utils.js').uuid;
+const genManifest = require('../lib/Utils.js').genManifest;
+const async = require('../lib/Utils.js').async;
 
-var readFile = require('../lib/Utils.js').readFile;
-var writeFile = require('../lib/Utils.js').writeFile;
-var copyFile = require('../lib/Utils.js').copyFile;
-var access = require('../lib/Utils.js').access;
-var readdir = require('../lib/Utils.js').readdir;
+const readFile = require('../lib/Utils.js').readFile;
+const writeFile = require('../lib/Utils.js').writeFile;
+const copyFile = require('../lib/Utils.js').copyFile;
+const access = require('../lib/Utils.js').access;
+const readdir = require('../lib/Utils.js').readdir;
 
-var renderStyle = require('../lib/Utils.js').renderStyle;
-var applyTemplate = require('../lib/Utils.js').applyTemplate;
+const renderStyle = require('../lib/Utils.js').renderStyle;
+const applyTemplate = require('../lib/Utils.js').applyTemplate;
 
 // =============================================================================
 
-var CwdDir = process.cwd();
-var ExeDir = __dirname;
+const CwdDir = process.cwd();
+const ExeDir = __dirname;
 
 var DefaultTemplates = {};
 var templates = fs.readdirSync(joinPath(ExeDir, '../template'));
@@ -43,12 +43,12 @@ templates.forEach(t => {
     DefaultTemplates[t] = joinPath(ExeDir, '../template', t);
 });
 
-var EpubPath = CwdDir;
+var EpubPath;
 var OutputPath;
 
-var BuildPath = joinPath(EpubPath, '_build');
-var TemplatePath = joinPath(ExeDir, '../template/duokan');
-var DefaultTemplatePath = DefaultTemplates['default'];
+var BuildPath;
+var TemplatePath;
+var DefaultTemplatePath;
 
 
 // 暂时固定模板文件
@@ -356,8 +356,6 @@ var pack = async(function*() {
 // =============================================================================
 
 var argv = require('minimist')(process.argv.slice(2));
-
-
 
 if (argv.t) {
     let t = argv.t;
