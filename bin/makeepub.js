@@ -32,6 +32,7 @@ const readdir = require('../lib/Utils.js').readdir;
 const renderStyle = require('../lib/Utils.js').renderStyle;
 const applyTemplate = require('../lib/Utils.js').applyTemplate;
 
+
 // =============================================================================
 
 const CwdDir = process.cwd();
@@ -124,6 +125,22 @@ var ResourceFiles;
 
 // =============================================================================
 
+var xhtmlTemplate = [
+    '<?xml version="1.0" encoding="utf-8" standalone="no"?>',
+    '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">',
+    '<html xmlns="http://www.w3.org/1999/xhtml">',
+    '<head>',
+    '  <link href="<%= css_file %>" rel="stylesheet" type="text/css" />',
+    '  <title></title>',
+    '</head>',
+    '<body>',
+    '  <%= html_content %>',
+    '</body>',
+    '</html>',
+].join('\n');
+
+
+
 var tocTemplateCompiled;
 var contentTemplateCompiled;
 
@@ -188,6 +205,7 @@ var templateFile = async(function*(stylefile, chapters) {
 
     // console.dir(Manifest);
 });
+
 
 
 // =============================================================================
