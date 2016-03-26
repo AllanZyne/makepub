@@ -7,6 +7,8 @@ const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
 const yaml = require('js-yaml');
+const mime = require('mime');
+const xmlbuilder = require('xmlbuilder');
 
 const pd = require('pretty-data').pd;
 
@@ -21,6 +23,7 @@ const joinPath = require('../lib/Utils.js').joinPath;
 const changeExt = require('../lib/Utils.js').changeExt;
 const uuid = require('../lib/Utils.js').uuid;
 const genManifest = require('../lib/Utils.js').genManifest;
+const getFileType = require('../lib/Utils.js').getFileType;
 const async = require('../lib/Utils.js').async;
 
 const readFile = require('../lib/Utils.js').readFile;
@@ -49,194 +52,229 @@ var OutputPath;
 
 var BuildPath;
 var TemplatePath;
-var DefaultTemplatePath;
-
+var DefaultTemplatePath = joinPath(ExeDir, '../template/default');
 
 // 暂时固定模板文件
 var TemplateFile = {
     stylesheet : "style.less",     // 样式文件
-    cover : 'cover.xhtml',         // 封面
-    preface : 'preface.xhtml',     // 前言
-    copyright : 'copyright.xhtml', // 版权
     chapter : 'chapter.xhtml',     // 内容
 };
-
 
 var EpubMetaDataPath;
 
 /*
-
 书籍模板数据
-
-
 */
 var EpubMetadata;
 
 /*
-
-书籍信息相关
-
-Metadata = {
-    title :: String
-    author :: String
-    publisher :: String
-    language :: String
-    rights :: String
-    cover :: FilePath
-    stylesheet :: FilePath
-}
-
+书籍的基本信息
 */
-var Metadata;
+var Metadata = {
+    title: null,
+    author: '佚名',
+    publisher: null,
+    language: 'zh-CN',
+    copyrights: null,
+    cover: null,
+    resoucepath: [],
+    template: "duokan",
+    stylesheet: [],
+    book_id: 'urn:uuid:' + uuid(),
+    resource_id: 'urn:uuid:' + uuid(),
+    version: '0.0.1',
+    page_direction: null,
+};
 
 /*
-
 书籍的全部资源
-
-data Item = {
-    uid :: String,
-    path :: String,
-    mime :: String,
-}
-
-type Manifest = [Item]
-
 */
-var Manifest;
+var Manifest = {
+    _itemsTypeSet: {},
+    _itemFileSet: {},
+    _manifest: []
+};
 
-/*
+Manifest.addFile = function(file) {
+    file = file.replace(/\\/g, '/');
 
-一个文件一个Chapter
+    if (this._itemFileSet[file])
+        return;
 
-data Chapter = {
-    title: String,
-    level: Int,
-}
+    let fileMime = mime.lookup(file);
+    let fileType = fileMime.split('/')[0];
+    let item = {
+        href: file,
+        type: fileType,
+        mime: fileMime
+    };
+    let items = _.get(this._itemsTypeSet, fileType, []);
+    items.push(item);
 
-type Toc = [Chapter]
+    this._itemsTypeSet[fileType] = items;
+    this._itemFileSet[file] = item;
+};
 
-*/
-var Toc = [];
+Manifest.generateId = function() {
+    let manifest = [];
+    let itemTypes = _.keys(this._itemsTypeSet).sort();
+    let typeCounters = {};
 
-
-var ResourceDirs;
-var ResourceFiles;
-
-
-// =============================================================================
-
-var xhtmlTemplate = [
-    '<?xml version="1.0" encoding="utf-8" standalone="no"?>',
-    '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">',
-    '<html xmlns="http://www.w3.org/1999/xhtml">',
-    '<head>',
-    '  <link href="<%= css_file %>" rel="stylesheet" type="text/css" />',
-    '  <title></title>',
-    '</head>',
-    '<body>',
-    '  <%= html_content %>',
-    '</body>',
-    '</html>',
-].join('\n');
-
-
-
-var tocTemplateCompiled;
-var contentTemplateCompiled;
-
-var coverTemplateCompiled;
-var copyrightTempalteCompiled;
-var prefaceTemplateCompiled;
-
-var chapterTemplateCompiled;
-
-var styleTemplate;
-
-var templateFile = async(function*(stylefile, chapters) {
-
-    // 合并样式
-    info('[[样式文件]]');
-
-    let tplStyleFile = joinPath(TemplatePath, TemplateFile.stylesheet);
-    let styleContent = yield renderStyle(tplStyleFile);
-    let epbStyleFile = joinPath(EpubPath, stylefile);
-    styleContent += yield renderStyle(epbStyleFile);
-
-    info(stylefile);
-    Manifest.push(genManifest(changeExt(stylefile, 'css')));
-
-    let styleFile = changeExt(stylefile, 'css');
-    styleFile = joinPath(BuildPath, styleFile);
-
-    debug(styleFile);
-    yield writeFile(styleFile, styleContent);
-
-    // 处理markdown
-    // 关系到toc的问题
-    info('[[文本文件]]');
-
-    // console.log(chapters);
-
-    for (let chpFile of chapters) {
-        // debug(chpFile);
-
-        let chpContent = yield readFile(joinPath(EpubPath, chpFile));
-
-        let md = markdown(chpContent.toString());
-        let xhtmlContent = md.makeHtml();
-        let xhtmlHeaders = md.getHeaders();
-        let xhtmlFile = changeExt(chpFile, 'xhtml');
-
-        Toc.push({ file: xhtmlFile, headers: xhtmlHeaders });
-        // console.log(xhtmlHeaders);
-
-        Manifest.push(genManifest(xhtmlFile));
-
-        xhtmlFile = joinPath(BuildPath, xhtmlFile);
-
-        xhtmlContent = yield applyTemplate(joinPath(TemplatePath, 'chapter.xhtml'), {
-            metadata: { stylesheet: '../' + changeExt(stylefile, 'css') },
-            content: xhtmlContent,
+    for (let itemType of itemTypes) {
+        let items = this._itemsTypeSet[itemType];
+        let padLength = items.length.toString().length;
+        // console.log(items);
+        _.sortBy(items, 'href').forEach((item) => {
+            let count = _.get(typeCounters, itemType, 0);
+            typeCounters[itemType] = count + 1;
+            item.id = itemType + _.padLeft(count, padLength, '0');
+            manifest.push(item);
         });
-
-        debug(xhtmlFile);
-        yield writeFile(xhtmlFile, xhtmlContent);
     }
 
-    // console.dir(Manifest);
-});
+    this._manifest = manifest;
 
+    return manifest;
+};
+
+Manifest.getId = function(file) {
+    if (! this._manifest)
+        throw new Error("【错误】应该先调用Manifest.generateId()！");
+    file = file.replace(/\\/g, '/');
+    let item = this._itemFileSet[file];
+    if (! item)
+        throw new Error(`【错误】无法得到文件‘${file}’的id！`);
+    return item.id;
+};
+
+
+var Spines = [];
+
+/*
+
+*/
+var Tocs = [];
+
+var ResourceDirs = [];
+var ResourceFiles = [];
 
 
 // =============================================================================
 
+function xhtmlTemplate(xhtml_body, css_files) {
+    let head_css = '';
+    if (css_files) {
+        head_css = '\n';
+        for (let css_file of css_files) {
+            head_css += `  <link rel="stylesheet" type="text/css" href="${css_file}"/>\n`;
+        }
+    }
+    return `<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title></title>${head_css}
+</head>
+<body>
+  ${xhtml_body}
+</body>
+</html>`;
+}
 
+function imageXhtmlTemplate(image_file) {
+    return xhtmlTemplate(`<p><img src="${image_file}"/></p>`);
+}
+
+function fileRelative(fileFrom, fileTo) {
+    return path.relative(path.dirname(fileFrom), fileTo);
+}
+
+// =============================================================================
+
+// load config
 var load = async(function*() {
     let ifExist = yield access(EpubMetaDataPath);
     if (! ifExist) {
-        throw new Error("元数据文件不存在！！");
+        throw new Error("【错误】元数据文件不存在！！");
     }
 
     info('加载元数据...' + EpubMetaDataPath);
 
-    var epubMetadataContent = yield readFile(EpubMetaDataPath);
-    var epubMetadata = yaml.safeLoad(epubMetadataContent);
-    if (!epubMetadata)
-        return false;
+    let content = yield readFile(EpubMetaDataPath);
+    let lines = content.toString().replace(/\r?\n/g, '\n').split('\n');
+    let n = 0, len = lines.length, result;
 
-    EpubMetadata = yaml.safeLoad(epubMetadataContent);
-    Metadata = EpubMetadata.metadata || EpubMetadata.info;
-    Manifest = EpubMetadata.manifest = [];
-    Toc = EpubMetadata.tocs = [];
+    while ((n < len) && (! lines[n++].match(/^\[metadata\]$/)))
+        continue;
 
-    EpubMetadata.metadata = Metadata;
+    while ((n < len) && (result = lines[n++].match(/^\s*\.([\w_]+)\s*(.*)$/))) {
+        let key = result[1],
+            val = _.trim(result[2]);
+        if (val.length)
+            Metadata[key] = val;
+    }
+    n--;
 
-    Metadata.book_id = Metadata.book_id || uuid();
-    Metadata.resource_id = Metadata.resource_id || uuid();
+    if ((! Metadata.title) || (! Metadata.title.length))
+        throw new Error("【错误】没有设置标题！");
 
-    Metadata.rights = Metadata.rights ? Metadata.rights : "";
+    // if ((! Metadata.author) || (! Metadata.author.length))
+        // throw new Error("【错误】没有设置标题！");
 
-    ResourceDirs = EpubMetadata.resource || [];
+    // TODO: use default cover image
+    if ((! Metadata.cover) || (! Metadata.cover.length))
+        throw new Error("【错误】没有设置CoverImage！");
+
+    if (_.isString(Metadata.resoucepath)) {
+        let resoucePath = Metadata.resoucepath.replace(/\s+/g, '|').replace(/\\/g, '/').split('|');
+        Metadata.resoucepath = resoucePath;
+    }
+    ResourceDirs = Metadata.resoucepath;
+
+    if (_.isString(Metadata.stylesheet)) {
+        let stylesheet = Metadata.stylesheet.replace(/\s+/g, '|').replace(/\\/g, '/').split('|');
+        Metadata.stylesheet = stylesheet;
+    }
+
+    // TODO: check Metadata value !!
+
+
+    // console.log(Metadata);
+    // console.log(n);
+
+    while ((n < len) && (! lines[n++].match(/^\[spine\]$/)))
+        continue;
+
+    while ((n < len) && (result = lines[n++].match(/^\s*-\s*(.*)$/))) {
+        let item = {};
+        item.file = result[1].replace(/\\/g, '/');
+
+        while ((n < len) && (result = lines[n++].match(/^\s*\.([\w_]+)\s*(.*)$/))) {
+            item[result[1]] = result[2];
+        }
+        n--;
+
+        Spines.push(item);
+    }
+
+    // console.log(Spines);
+    // console.log(n);
+
+    while ((n < len) && (! lines[n++].match(/^\[toc\]$/)))
+        continue;
+
+    while ((n < len) && (result = lines[n++].match(/^(\s*)-\s*\[(.*)\]\((.*)\)$/))) {
+        let nav = {};
+        nav.indent = result[1].length;
+        nav.text = result[2];
+        nav.href = result[3].replace(/\\/g, '/');
+
+        Tocs.push(nav);
+    }
+
+    // console.log(Tocs);
+    // console.log(n);
+
     ResourceFiles = [];
 
     for (let dir of ResourceDirs) {
@@ -246,12 +284,67 @@ var load = async(function*() {
             continue;
         let rfiles = yield readdir(rdir);
 
-        ResourceFiles = ResourceFiles.concat(rfiles.map((f => path.join(dir, f))));
+        ResourceFiles = ResourceFiles.concat(rfiles.map((file => path.join(dir, file).replace(/\\/g, '/') )));
     }
 
-    return true;
-});
+    ResourceFiles.forEach(function(file) {
+        ResourceFiles[path.basename(file)] = file;
+    });
 
+    // console.log(ResourceFiles);
+    // console.log(n);
+
+    // check if file exists
+
+    if (! (yield access(joinPath(EpubPath, Metadata.cover)))) {
+        let _cover = ResourceFiles[Metadata.cover];
+        if (! _cover)
+            throw new Error("【错误】CoverImage：‘" + Metadata.cover + "’ 不存在！");
+        Metadata.cover = _cover;
+    }
+
+    for (let i in Metadata.stylesheet) {
+        let styleFile = Metadata.stylesheet[i];
+        if (! (yield access(joinPath(EpubPath, styleFile)))) {
+            let _styleFile = ResourceFiles[styleFile];
+            if (! _styleFile)
+                throw new Error("【错误】样式文件‘" + styleFile + "’不存在！");
+            Metadata.stylesheet[i] = _styleFile;
+        }
+    }
+
+    for (let spine of Spines) {
+        if (spine.fullscreen) {
+            let spineFile = spine.fullscreen;
+            if (! (yield access(joinPath(EpubPath, spineFile)))) {
+                let _spineFile = ResourceFiles[spineFile];
+                if (! _spineFile)
+                    throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
+                spine.file = _spineFile;
+            }
+        } else if (spine.markdown) {
+            let spineFile = spine.markdown;
+            if (! (yield access(joinPath(EpubPath, spineFile)))) {
+                let _spineFile = ResourceFiles[spineFile];
+                if (! _spineFile)
+                    throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
+                spine.file = _spineFile;
+            }
+        } else {
+            let spineFile = spine.file;
+            if (! (yield access(joinPath(EpubPath, spineFile)))) {
+                let _spineFile = ResourceFiles[spineFile];
+                if (! _spineFile)
+                    throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
+                spine.file = _spineFile;
+            }
+        }
+    }
+
+    console.log(Metadata);
+
+    EpubMetadata = true;
+});
 
 var build = async(function*() {
     if (!EpubMetadata)
@@ -260,61 +353,229 @@ var build = async(function*() {
     // -------------------------------------------------------------------------
     // Resource { static files path }
     // -------------------------------------------------------------------------
-    info('[资源文件]');
 
-    // TODO: 检测重复文件，避免拷贝
+    info('[[资源文件]]');
+
     for (let file of ResourceFiles) {
-        info("资源文件...", file);
-        Manifest.push(genManifest(file));
-        yield copyFile(joinPath(BuildPath, file), joinPath(EpubPath, file));
-    }
-
-    if (Metadata.cover) {
-        Manifest.push(genManifest(Metadata.cover));
-        yield copyFile(joinPath(BuildPath, Metadata.cover), joinPath(EpubPath, Metadata.cover));
+        let fileExt = path.extname(file);
+        if (fileExt !== '.less')
+            Manifest.addFile(file);
     }
 
     // -------------------------------------------------------------------------
-    // Template
+    // StyeSheet
     // -------------------------------------------------------------------------
 
-    yield templateFile(Metadata.stylesheet, EpubMetadata.catalog);
+    info('[[样式文件]]');
 
-    Metadata.stylesheet = changeExt(Metadata.stylesheet, 'css');
+    for (let styleFile of Metadata.stylesheet) {
+        let fileExt = path.extname(styleFile);
+        // TODO: validate css (href..., etc)
+        if (fileExt === '.less') {  // TODO: convert to .css
+
+        }
+    }
 
     // -------------------------------------------------------------------------
-    // BOOK
+    // Spines
     // -------------------------------------------------------------------------
 
-    // console.log(DefaultTemplates);
+    info('[[书脊文件]]');
 
-    info('[[CONTENT.OPF]]');
-    let content_opf = yield applyTemplate(joinPath(DefaultTemplatePath, 'content.opf'), EpubMetadata);
-    let content_opf_path = joinPath(BuildPath, 'content.opf');
-    debug(content_opf_path);
-    yield writeFile(content_opf_path, pd.xml(content_opf));
+    // cover
+    let coverSpine = {
+        file: 'cover.xhtml',
+        fullscreen: Metadata.cover
+    };
+    Spines.unshift(coverSpine);
 
-    info('[[TOC.NCX]]');
-    let toc_ncx = yield applyTemplate(joinPath(DefaultTemplatePath, 'toc.ncx'), EpubMetadata);
-    let toc_ncx_path = joinPath(BuildPath, 'toc.ncx');
-    debug(toc_ncx_path);
-    yield writeFile(toc_ncx_path, pd.xml(toc_ncx));
+    for (let spine of Spines) {
+        if (spine.fullscreen) {
+            let imageFile = fileRelative(spine.file, spine.fullscreen);
+            let xhtmlContent = imageXhtmlTemplate(imageFile);
+            Manifest.addFile(spine.file);
+            spine.buildFile = joinPath(BuildPath, spine.file);
+            yield writeFile(spine.buildFile, xhtmlContent);
+        } else if (spine.markdown) {
 
-    // cover preface copyright
-    let cover_xhtml = yield applyTemplate(joinPath(TemplatePath, 'cover.xhtml'), EpubMetadata);
-    let cover_xhtml_path = joinPath(BuildPath, 'cover.xhtml');
-    debug(cover_xhtml_path);
-    yield writeFile(cover_xhtml_path, cover_xhtml);
+        } else if (spine.file.match('xhtml')) {
+            // TODO: validate xhtml
+            Manifest.addFile(spine.file);
+        } else {
+            throw new Error("【错误】无法解析Spine文件‘" + spine.file + "’！");
+        }
+    }
 
-    let copyright_xhtml = yield applyTemplate(joinPath(TemplatePath, 'copyright.xhtml'), EpubMetadata);
-    let copyright_xhtml_path = joinPath(BuildPath, 'copyright.xhtml');
-    debug(copyright_xhtml_path);
-    yield writeFile(copyright_xhtml_path, copyright_xhtml);
+    // -------------------------------------------------------------------------
+    // TOC.NCX
+    // -------------------------------------------------------------------------
+    {
+        info('[[TOC.NCX]]');
 
-    let preface_xhtml = yield applyTemplate(joinPath(TemplatePath, 'preface.xhtml'), EpubMetadata);
-    let preface_xhtml_path = joinPath(BuildPath, 'preface.xhtml');
-    debug(preface_xhtml_path);
-    yield writeFile(preface_xhtml_path, preface_xhtml);
+        let toc_ncx = xmlbuilder.create('ncx').dec('1.0', 'utf-8', true).att({
+            'xmlns': 'http://www.daisy.org/z3986/2005/ncx/',
+            'version': '2005-1'
+        });
+
+        let head = toc_ncx.ele('head');
+
+        head.ele('meta', {
+            name: 'dtb:uid',
+            content: Metadata.book_id
+        });
+        head.ele('meta', {
+            name: 'dtb:depth',
+            content: '1'
+        });
+        head.ele('meta', {
+            name: 'dtb:totalPageCount',
+            content: '0'
+        });
+        head.ele('meta', {
+            name: 'dtb:maxPageNumber',
+            content: '0'
+        });
+
+        toc_ncx.ele('docTitle').ele('text').txt(Metadata.title);
+
+        let navMap = toc_ncx.ele('navMap');
+        let navPoint = navMap.ele('navPoint');
+        for (let i = 0, len = Tocs.length; i < len; i++) {
+            let toc = Tocs[i];
+            navPoint.att({ id: `toc${i+1}`, playOrder: i+1});
+            navPoint.ele('navLabel').ele('text').txt(toc.text);
+            navPoint.ele('content', { src: toc.href });
+
+            let nextIndent = _.get(Tocs, `${i+1}.indent`);
+            if (_.isNumber(nextIndent)) {
+                let deltaIndent = nextIndent - toc.indent;
+                if (deltaIndent > 0) {
+                    navPoint = navPoint.ele('navPoint');
+                } else if (deltaIndent === 0) {
+                    navPoint = navPoint.up().ele('navPoint');
+                } else {
+                    while (deltaIndent++) {
+                        navPoint = navPoint.up();
+                    }
+                }
+            }
+        }
+
+        let tocFile = joinPath(BuildPath, 'toc.ncx');
+        let tocContent = toc_ncx.end({
+              pretty: true,
+              indent: '  ',
+              newline: '\n',
+              allowEmpty: false
+        });
+
+        Manifest.addFile('toc.ncx');
+
+        yield writeFile(tocFile, tocContent);
+    }
+
+
+    Manifest.generateId();
+
+    // console.log(Manifest._manifest);
+
+    // -------------------------------------------------------------------------
+    // CONTENT.OPF
+    // -------------------------------------------------------------------------
+    {
+        info('[[CONTENT.OPF]]');
+
+        let content_opf = xmlbuilder.create('package').dec('1.0', 'utf-8', true).att({
+            'xmlns': 'http://www.idpf.org/2007/opf',
+            'unique-identifier' : 'pub-id',
+            'xml:lang': Metadata.language,
+            'version': '3.0'
+        });
+
+        let content_opf_metadata = content_opf.ele('metadata');
+        content_opf_metadata.att({
+            'xmlns:dc': 'http://purl.org/dc/elements/1.1/',
+            'xmlns:opf': 'http://www.idpf.org/2007/opf'
+        });
+
+        // title
+        content_opf_metadata.ele('dc:title', { id: 'title' }, Metadata.title);
+        content_opf_metadata.ele('meta', {
+            refines: '#title',
+            property: 'dcterms:title'
+        }, Metadata.title);
+
+        // creator
+        content_opf_metadata.ele('dc:creator', { id: 'creator' }, Metadata.author);
+        content_opf_metadata.ele('meta', {
+            refines: '#creator',
+            property: 'dcterms:creator'
+        }, Metadata.creator);
+
+        // language
+        content_opf_metadata.ele('dc:language', { id: 'pub-lang' }, Metadata.language);
+        content_opf_metadata.ele('meta', {
+            refines: '#pub-lang',
+            property: 'dcterms:language'
+        }, Metadata.language);
+
+        // uid
+        content_opf_metadata.ele('dc:identifier', { id: 'pub-id' }, Metadata.book_id);
+        content_opf_metadata.ele('meta', {
+            refines: '#pub-id',
+            property: 'dcterms:identifier'
+        }, Metadata.book_id);
+
+        // cover
+        content_opf_metadata.ele('meta', {
+            name: 'cover',
+            content: Manifest.getId(coverSpine.file)
+        });
+
+        // manifest
+        let content_opf_manifest = content_opf.ele('manifest');
+        for (let item of Manifest._manifest) {
+            content_opf_manifest.ele('item', {
+                'id': item.id,
+                'href': item.href,
+                'media-type': item.mime,
+            });
+        }
+
+        // spine
+        let content_opf_spine = content_opf.ele('spine', {
+            toc : Manifest.getId('toc.ncx')
+        });
+        if (Metadata.page_direction)
+            content_opf_spine.att('page-progression-direction', Metadata.page_direction);
+
+        for (let spine of Spines) {
+            let itemref = content_opf_spine.ele('itemref', {
+                'idref': Manifest.getId(spine.file),
+                'linear': 'yes'
+            });
+            if (spine.fullscreen) {
+                itemref.att('properties', 'duokan-page-fullscreen');
+            }
+        }
+
+        // guide
+        let content_opf_guide = content_opf.ele('guide');
+        content_opf_guide.ele('reference', {
+            type: 'cover',
+            title: Manifest.getId(coverSpine.file),
+            href: coverSpine.file
+        });
+
+        let content_opf_path = joinPath(BuildPath, 'content.opf');
+        let content_opf_content = content_opf.end({
+              pretty: true,
+              indent: '  ',
+              newline: '\n',
+              allowEmpty: false
+        });
+        yield writeFile(content_opf_path, content_opf_content);
+    }
 
     info('编译完成');
 });
@@ -324,46 +585,29 @@ var pack = async(function*() {
     if (!EpubMetadata)
         yield load();
 
+    info('[打包EPUB]');
+
     let fileName = joinPath(BuildPath, 'output.epub');
     let epubAchive = new EpubAchive(fileName);
 
-    let filePath;
-
-    info('[打包EPUB]');
-
-    filePath = joinPath(DefaultTemplatePath, 'META-INF/container.xml');
+    let filePath = joinPath(DefaultTemplatePath, 'container.xml');
     epubAchive.addFile('META-INF/container.xml', yield readFile(filePath));
 
-    var templateFiles = ['content.opf', 'toc.ncx', 'cover.xhtml', 'preface.xhtml', 'copyright.xhtml'];
-
-    for (let tfile of templateFiles) {
-        filePath = joinPath(BuildPath, tfile);
-        epubAchive.addFile(tfile, yield readFile(filePath));
+    for (let file of ResourceFiles) {
+        epubAchive.addFile(file, yield readFile(file));
     }
 
-    // static files
-    if (Metadata.cover) {
-        filePath = joinPath(BuildPath, Metadata.cover);
-        epubAchive.addFile(Metadata.cover, yield readFile(filePath));
+    for (let spine of Spines) {
+        let filePath = spine.buildFile ? spine.buildFile : spine.file;
+        epubAchive.addFile(spine.file, yield readFile(filePath));
     }
 
-    if (Metadata.stylesheet) {
-        let stylesheet = changeExt(Metadata.stylesheet, 'css');
-        filePath = joinPath(BuildPath, stylesheet);
-        epubAchive.addFile(stylesheet, yield readFile(filePath));
-    }
+    var templateFiles = ['content.opf', 'toc.ncx'];
 
-    for (let rfile of ResourceFiles) {
-        filePath = joinPath(BuildPath, rfile);
-        epubAchive.addFile(rfile, yield readFile(filePath));
+    for (let file of templateFiles) {
+        filePath = joinPath(BuildPath, file);
+        epubAchive.addFile(file, yield readFile(filePath));
     }
-
-    for (let cfile of EpubMetadata.catalog) {
-        cfile = changeExt(cfile, 'xhtml');
-        filePath = joinPath(BuildPath, cfile);
-        epubAchive.addFile(cfile, yield readFile(filePath));
-    }
-
 
     epubAchive.writeZip();
 });
@@ -409,7 +653,7 @@ var o = argv_[1];
 if (o)
    OutputPath = "";
 
-EpubMetaDataPath = joinPath(EpubPath, 'metadata.yaml');
+EpubMetaDataPath = joinPath(EpubPath, 'BOOK');
 
 
 
@@ -465,11 +709,10 @@ process.exit();
 !!!
 ===========
 自定义脚本
-主题目录
+主题
 
 !!
 ============
-只更新变动文件
 
 !
 ============
