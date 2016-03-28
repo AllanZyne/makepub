@@ -1,7 +1,42 @@
 Epub的制作工具
 =======================
 
-转markdown格式
+<em style="color: red">（尚未完成）</em>
+
+一个专门为[多看阅读客户端](http://www.duokan.com/product)优化的制作ePub工具。
+
+主要支持通过Markdown格式制作ePub，同时对Markdown扩展了部分语法以生成多看公开的私有样式（参见：[ 多看电子书规范扩展开放计划](http://www.miui.com/thread-1960799-1-1.html)）。
+
+功能（特色）
+-----------------------
+
+- 支持添加自定义js脚本再加工
+- 支持转换less文件
+- Markdown相关
+  - 支持多看的全屏插图页、富文本脚注、交互图
+  - 支持代码语法高亮
+  - 支持TeX转MathML（多看似乎支持MathML）
+
+安装
+------------------------
+
+```sh
+> git clone https://github.com/DrsExplorer/epubtools.git
+> cd epubtools
+> npm install
+> npm link
+```
+
+开始制作
+-----------------------
+
+....
+....
+....
+
+
+命令帮助
+-----------------------
 
 
      makeepub for duokan
