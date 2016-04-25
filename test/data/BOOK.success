@@ -1,0 +1,45 @@
+[metadata]
+
+.title           测试标题 
+.author          作者
+.publisher       出版者
+.language        
+.cover           cover.jpg
+.resouce_path    dir1\ dir2
+
+[spine]
+
+.stylesheet      style.less
+.template        default
+.page_direction
+.script          script.js  
+
+- xhtml/0001.xhtml
+- xhtml/0002.xhtml
+- xhtml/0003.md
+  .markdown_extra
+  .script 0003.script.js
+- xhtml/0004.xhtml
+  .image images/0002.jpg
+
+[toc]
+
+- [序言　◎　一级标题０](xhtml/0001.xhtml)
+- [一章　◎　一级标题１](xhtml/0002.xhtml)
+  - [一唱　◎　二级标题０](xhtml/0002.xhtml#chp01)
+    - [一坤　◎　三级标题０](xhtml/0002.xhtml#chp01-0)
+    - [二坤　◎　三级标题１](xhtml/0002.xhtml#chp01-1)
+    - [三坤　◎　三级标题２](xhtml/0002.xhtml#chp01-2)
+  - [二唱　◎　二级标题１](xhtml/0002.xhtml#chp02)
+    - [一坤　◎　三级标题０](xhtml/0002.xhtml#chp02-0)
+    - [二坤　◎　三级标题１](xhtml/0002.xhtml#chp02-1)
+- [二章　◎　一级标题２](xhtml/0003.xhtml)
+  - [一唱　◎　二级标题０](xhtml/0003.xhtml#chp01)
+    - [一坤　◎　三级标题０](xhtml/0003.xhtml#chp01-0)
+    - [二坤　◎　三级标题１](xhtml/0003.xhtml#chp01-1)
+  - [二唱　◎　二级标题１](xhtml/0003.xhtml#chp02)
+    - [一坤　◎　三级标题０](xhtml/0003.xhtml#chp02-0)
+      - [一调　◎　四级标题０](xhtml/0003.xhtml#chp02-0-0)
+      - [二调　◎　四级标题１](xhtml/0003.xhtml#chp02-0-1)
+      - [三调　◎　四级标题２](xhtml/0003.xhtml#chp02-0-2)
+- [三章　◎　一级标题３](xhtml/0008.xhtml)
