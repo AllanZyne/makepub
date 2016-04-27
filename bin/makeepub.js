@@ -71,13 +71,15 @@ function fileRelative(fileFrom, fileTo) {
 var load = async(function*() {
     let fExist = yield access(BookPath);
     if (! fExist) {
-        throw new Error("【错误】元数据文件不存在！！");
+        throw new Error("【错误】BOOK文件不存在！！");
     }
 
-    info('加载元数据...' + BookPath);
+    info('解析BOOK文件...' + BookPath);
 
     let content = yield readFile(BookPath);
     BookData = parseBook(content);
+
+    info('解析完成');
 
     Metadata = BookData.metadata;
     Tocs = BookData.toc;
@@ -94,16 +96,19 @@ var load = async(function*() {
         throw new Error("【错误】没有设置CoverImage！");
 
     // get files
-    for (let dir of Metadata.resouce_path) {
-        let rdir = joinPath(EpubPath, dir);
-        let ifExist = yield access(rdir);
-        if (! ifExist)
-            continue;
-        let rfiles = yield readdir(rdir);
-
-        ResourceFiles = ResourceFiles.concat(
-            rfiles.map((file => path.join(dir, file).replace(/\\/g, '/') ))
-        );
+    if (Metadata.resoucepath) {
+        for (let dir of Metadata.resoucepath) {
+            let rdir = joinPath(EpubPath, dir);
+            let ifExist = yield access(rdir);
+            // console.log(rdir);
+            if (! ifExist)
+                continue;
+            let rfiles = yield readdir(rdir);
+            // console.log(rfiles);
+            ResourceFiles = ResourceFiles.concat(
+                rfiles.map((file => path.join(dir, file).replace(/\\/g, '/') ))
+            );
+        }
     }
 
     ResourceFiles.forEach(function(file) {
@@ -112,7 +117,7 @@ var load = async(function*() {
 
     // validate file
     if (! (yield access(joinPath(EpubPath, Metadata.cover)))) {
-        let _cover = ResourceFiles[Metadata.cover];
+        let _cover = SearchFiles[Metadata.cover];
         if (! _cover)
             throw new Error("【错误】CoverImage：‘" + Metadata.cover + "’ 不存在！");
         Metadata.cover = _cover;
@@ -121,7 +126,7 @@ var load = async(function*() {
     for (let i in Metadata.stylesheet) {
         let styleFile = Metadata.stylesheet[i];
         if (! (yield access(joinPath(EpubPath, styleFile)))) {
-            let _styleFile = ResourceFiles[styleFile];
+            let _styleFile = SearchFiles[styleFile];
             if (! _styleFile)
                 throw new Error("【错误】样式文件‘" + styleFile + "’不存在！");
             Metadata.stylesheet[i] = _styleFile;
@@ -129,10 +134,10 @@ var load = async(function*() {
     }
 
     for (let spine of Spines) {
-        if (spine.image) {
-            let spineFile = spine.image;
+        if (spine.fullscreen) {
+            let spineFile = spine.fullscreen;
             if (! (yield access(joinPath(EpubPath, spineFile)))) {
-                let _spineFile = ResourceFiles[spineFile];
+                let _spineFile = SearchFiles[spineFile];
                 if (! _spineFile)
                     throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
                 spine.file = _spineFile;
@@ -140,7 +145,7 @@ var load = async(function*() {
         } else if (spine.markdown) {
             let spineFile = spine.markdown;
             if (! (yield access(joinPath(EpubPath, spineFile)))) {
-                let _spineFile = ResourceFiles[spineFile];
+                let _spineFile = SearchFiles[spineFile];
                 if (! _spineFile)
                     throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
                 spine.file = _spineFile;
@@ -148,7 +153,7 @@ var load = async(function*() {
         } else {
             let spineFile = spine.file;
             if (! (yield access(joinPath(EpubPath, spineFile)))) {
-                let _spineFile = ResourceFiles[spineFile];
+                let _spineFile = SearchFiles[spineFile];
                 if (! _spineFile)
                     throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
                 spine.file = _spineFile;
@@ -156,11 +161,13 @@ var load = async(function*() {
         }
     }
 
+    info('校验完成');
     // TODO: validate toc
 
 });
 
 var build = async(function*() {
+
     if (! BookData)
         yield load();
 
@@ -168,7 +175,7 @@ var build = async(function*() {
     // Resource { static files path }
     // -------------------------------------------------------------------------
 
-    info('[[资源文件]]');
+    // info('[[资源文件]]');
 
     for (let file of ResourceFiles) {
         let fileExt = path.extname(file);
@@ -460,7 +467,7 @@ if (argv.b) {
     else
         BuildPath = joinPath(CwdDir, argv.b);
 } else {
-    BuildPath = joinPath(EpubPath, '.build');
+    BuildPath = joinPath(EpubPath, '_build');
 }
 
 var o = argv_[1];
@@ -472,11 +479,11 @@ BookPath = joinPath(EpubPath, 'BOOK');
 
 
 debug("当前路径:", CwdDir);
-debug("程序路径:", ExeDir);
+// debug("程序路径:", ExeDir);
 debug("模板路径:", TemplatePath);
 debug("编译路径:", BuildPath);
 debug("输出路径:", OutputPath);
-debug("元数据路径:", BookPath);
+debug("BOOK路径:", BookPath);
 
 
 let catchCallback = _.bind(warn, null, '编译出错: ');
@@ -503,7 +510,6 @@ print(`
  * ------------------------------------------------
  *
  * -b <build_dir>  _build     编译路径
- * -t <theme>      duokan     使用的主题
  * -m <path>                  metadata路径
  *
  * -c 只编译，不打包

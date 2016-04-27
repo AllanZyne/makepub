@@ -6,7 +6,7 @@
     "makeepub": "./bin/makeepub.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/runTest.js"
   },
   "repository": {
     "type": "git",
@@ -22,7 +22,6 @@
     "colors": "^1.1.2",
     "crc": "^3.3.0",
     "highlight.js": "^8.9.1",
-    "js-yaml": "^3.4.2",
     "jsdom": "^7.2.2",
     "less": "^2.5.3",
     "lodash": "^3.10.1",
@@ -30,5 +29,8 @@
     "minimist": "^1.2.0",
     "pretty-data": "^0.40.0",
     "xmlbuilder": "^8.0.0"
+  },
+  "devDependencies": {
+    "jasmine": "^2.4.1"
   }
 }
