@@ -9,30 +9,17 @@ const xmlbuilder = require('xmlbuilder');
 const markdown = require('../lib/Markdown.js');
 const EpubAchive = require('../lib/EpubAchive.js');
 
-const print = require('../lib/Utils.js').print;
-const info = require('../lib/Utils.js').info;
-const debug = require('../lib/Utils.js').debug;
-const warn = require('../lib/Utils.js').warn;
-
-const joinPath = require('../lib/Utils.js').joinPath;
-const changeExt = require('../lib/Utils.js').changeExt;
-const getFileType = require('../lib/Utils.js').getFileType;
+const { print, info, debug, warn } = require('../lib/Utils.js');
+const { joinPath, changeExt, getFileType } = require('../lib/Utils.js');
 
 const async = require('../lib/Async.js').async;
-const readFile = require('../lib/Async.js').readFile;
-const writeFile = require('../lib/Async.js').writeFile;
-const copyFile = require('../lib/Async.js').copyFile;
-const access = require('../lib/Async.js').access;
-const readdir = require('../lib/Async.js').readdir;
+const { readFile, writeFile, copyFile, access, readdir } = require('../lib/Async.js');
+const input = require('../lib/Async.js').input;
 
 var Manifest = require('../lib/Book.js').Manifest;
 const parseBook = require('../lib/Book.js').parseBook;
 
-const jsdomHook = require('../lib/Template.js').jsdomHook;
-const xhtmlTemplate = require('../lib/Template.js').xhtmlTemplate;
-const imageXhtmlTemplate = require('../lib/Template.js').imageXhtmlTemplate;
-const renderStyle = require('../lib/Template.js').renderStyle;
-const applyTemplate = require('../lib/Template.js').applyTemplate;
+const { renderStyle, xhtmlTemplate, imageXhtmlTemplate, fileTemplate } = require('../lib/Template.js');
 
 
 // =============================================================================
@@ -54,7 +41,7 @@ templates.forEach(t => {
     DefaultTemplates[t] = joinPath(ExeDir, '../template', t);
 });
 
-var BookData, Metadata, Tocs, Spines;
+var Metadata, Tocs, Spines;
 
 var SearchFiles = {};
 var ResourceFiles = [];
@@ -64,6 +51,18 @@ var ResourceFiles = [];
 function fileRelative(fileFrom, fileTo) {
     return path.relative(path.dirname(fileFrom), fileTo);
 }
+
+var searchFile = async(function*(file) {
+    let filePath = joinPath(EpubPath, file);
+    if (! (yield access(filePath))) {
+        let _filePath = SearchFiles[file];
+        if (! _filePath)
+            throw new Error(`【错误】无法找到文件‘${filePath}’！`);
+        return _filePath;
+    }
+    return filePath;
+});
+
 
 // =============================================================================
 
@@ -77,31 +76,30 @@ var load = async(function*() {
     info('解析BOOK文件...' + BookPath);
 
     let content = yield readFile(BookPath);
-    BookData = parseBook(content);
+    let bookData = parseBook(content);
 
-    info('解析完成');
+    Metadata = bookData.metadata;
+    Tocs = bookData.toc;
+    Spines = bookData.spine;
 
-    Metadata = BookData.metadata;
-    Tocs = BookData.toc;
-    Spines = BookData.spine;
-
+    // 完整性检测
     if ((! Metadata.title) || (! Metadata.title.length))
         throw new Error("【错误】没有设置标题！");
 
     if ((! Metadata.author) || (! Metadata.author.length))
         throw new Error("【错误】没有设置作者！");
 
-    // TODO: use default cover image
-    if ((! Metadata.cover) || (! Metadata.cover.length))
+    // TODO: use default cover image  不是必要的？
+    if ((! Metadata.coverImage) || (! Metadata.coverImage.length))
         throw new Error("【错误】没有设置CoverImage！");
 
-    // get files
+    // 资源路径
     if (Metadata.resoucepath) {
         for (let dir of Metadata.resoucepath) {
             let rdir = joinPath(EpubPath, dir);
-            let ifExist = yield access(rdir);
+            let exist = yield access(rdir);
             // console.log(rdir);
-            if (! ifExist)
+            if (! exist)
                 continue;
             let rfiles = yield readdir(rdir);
             // console.log(rfiles);
@@ -116,11 +114,14 @@ var load = async(function*() {
     });
 
     // validate file
-    if (! (yield access(joinPath(EpubPath, Metadata.cover)))) {
-        let _cover = SearchFiles[Metadata.cover];
-        if (! _cover)
-            throw new Error("【错误】CoverImage：‘" + Metadata.cover + "’ 不存在！");
-        Metadata.cover = _cover;
+    if (Metadata.coverImage) {
+        if (! (yield access(joinPath(EpubPath, Metadata.coverImage)))) {
+            let _cover = SearchFiles[Metadata.cover];
+            if (! _cover)
+                throw new Error("【错误】CoverImage：‘" + Metadata.coverImage + "’ 不存在！");
+            Metadata.coverImage = _cover;
+        }
+        ResourceFiles.push(Metadata.coverImage);
     }
 
     for (let i in Metadata.stylesheet) {
@@ -134,31 +135,24 @@ var load = async(function*() {
     }
 
     for (let spine of Spines) {
-        if (spine.fullscreen) {
-            let spineFile = spine.fullscreen;
-            if (! (yield access(joinPath(EpubPath, spineFile)))) {
-                let _spineFile = SearchFiles[spineFile];
-                if (! _spineFile)
-                    throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
-                spine.file = _spineFile;
-            }
-        } else if (spine.markdown) {
-            let spineFile = spine.markdown;
-            if (! (yield access(joinPath(EpubPath, spineFile)))) {
-                let _spineFile = SearchFiles[spineFile];
-                if (! _spineFile)
-                    throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
-                spine.file = _spineFile;
-            }
-        } else {
-            let spineFile = spine.file;
-            if (! (yield access(joinPath(EpubPath, spineFile)))) {
-                let _spineFile = SearchFiles[spineFile];
-                if (! _spineFile)
-                    throw new Error("【错误】Spine文件‘" + spineFile + "’不存在！");
-                spine.file = _spineFile;
-            }
+        let file = spine.image || spine.markdown || spine.file;
+        spine._file = joinPath(EpubPath, file);
+        let exist = yield access(spine._file);
+        if (! exist)
+            throw new Error("【错误】Spine 文件‘" + file + "’不存在！");
+        if (spine.template) {
+            spine._template = joinPath(EpubPath, spine.template);
+            exist = yield access(spine._template);
+            if (! exist)
+                throw new Error("【错误】Spine 模板文件‘" + spine.template + "’不存在！");
         }
+    }
+
+    if (Spines.template) {
+        Spines._template = joinPath(EpubPath, Spines.template);
+        let exist = yield access(Spines._template);
+        if (! exist)
+            throw new Error("【错误】Spine 模板文件‘" + Spines.template + "’不存在！");
     }
 
     info('校验完成');
@@ -166,9 +160,23 @@ var load = async(function*() {
 
 });
 
+// var init = async(function*() {
+//     console.log('新建电子书');
+//     let title = yield input('标题：');
+//     let author = yield input('作者：');
+//     let lang = yield input('语言：');
+//     let coverImage = yield input('封面图片：');
+//     let template = yield input('模板：');
+
+
+// });
+
+// init();
+// return;
+
 var build = async(function*() {
 
-    if (! BookData)
+    if (! Metadata)
         yield load();
 
     // -------------------------------------------------------------------------
@@ -181,6 +189,7 @@ var build = async(function*() {
         let fileExt = path.extname(file);
         if (fileExt !== '.less')
             Manifest.addFile(file);
+        yield copyFile(joinPath(BuildPath, file), joinPath(EpubPath, file));
     }
 
     // -------------------------------------------------------------------------
@@ -189,12 +198,13 @@ var build = async(function*() {
 
     info('[[样式文件]]');
 
-    for (let styleFile of Metadata.stylesheet) {
+    for (let styleFile of Spines.stylesheet) {
         let fileExt = path.extname(styleFile);
         // TODO: validate css (href..., etc)
         if (fileExt === '.less') {  // TODO: convert to .css
 
         }
+        yield copyFile(joinPath(BuildPath, styleFile), joinPath(EpubPath, styleFile));
     }
 
     // -------------------------------------------------------------------------
@@ -206,22 +216,60 @@ var build = async(function*() {
     // cover
     let coverSpine = {
         file: 'cover.xhtml',
-        fullscreen: Metadata.cover
+        image: Metadata.coverImage
     };
     Spines.unshift(coverSpine);
 
     for (let spine of Spines) {
-        if (spine.fullscreen) {
-            let imageFile = fileRelative(spine.file, spine.fullscreen);
+        Manifest.addFile(spine.file);
+
+        if (spine.image) {
+            let imageFile = fileRelative(spine.file, spine.image);
             let xhtmlContent = imageXhtmlTemplate(imageFile);
-            Manifest.addFile(spine.file);
             spine.buildFile = joinPath(BuildPath, spine.file);
             yield writeFile(spine.buildFile, xhtmlContent);
         } else if (spine.markdown) {
+            info('markdown:', spine.markdown);
+            let content = yield readFile(spine._file);
+            let md = markdown(content.toString());
+            let mdContent = md.makeHtml();
 
+            let stylesheet = spine.stylesheet || Spines.stylesheet;
+            stylesheet = stylesheet.map(f => fileRelative(spine.file, f));
+
+            let xhtmlContent;
+
+            let template = spine._template || Spines._template;
+            if (template) {
+                let data = {
+                    metadata: Metadata,
+                    stylesheet: stylesheet,
+                    markdown: mdContent,
+                    file: spine.file,
+                };
+                // print(stylesheet);
+                // print(data);
+                xhtmlContent = yield fileTemplate(template, data);
+            } else {
+                xhtmlContent = xhtmlTemplate(mdContent, stylesheet);
+            }
+
+            spine.buildFile = joinPath(BuildPath, spine.file);
+            yield writeFile(spine.buildFile, xhtmlContent);
+
+            if (Tocs.autogenerate) {
+                let headers = md.getHeaders();
+                for (let h of headers) {
+                    let nav = {};
+                    nav.indent = h[0];
+                    nav.href = spine.file + '#' + h[1];
+                    nav.text = h[2];
+                    Tocs.push(nav);
+                }
+            }
         } else if (spine.file.match('xhtml')) {
             // TODO: validate xhtml
-            Manifest.addFile(spine.file);
+            // Manifest.addFile(spine.file);
         } else {
             throw new Error("【错误】无法解析Spine文件‘" + spine.file + "’！");
         }
@@ -232,6 +280,8 @@ var build = async(function*() {
     // -------------------------------------------------------------------------
     {
         info('[[TOC.NCX]]');
+
+        console.dir(Tocs);
 
         let toc_ncx = xmlbuilder.create('ncx').dec('1.0', 'utf-8', false).att({
             'xmlns': 'http://www.daisy.org/z3986/2005/ncx/',
@@ -268,6 +318,7 @@ var build = async(function*() {
             navPoint.ele('content', { src: toc.href });
 
             let nextIndent = _.get(Tocs, `${i+1}.indent`);
+            // print(toc.indent, nextIndent);
             if (_.isNumber(nextIndent)) {
                 let deltaIndent = nextIndent - toc.indent;
                 if (deltaIndent > 0) {
@@ -278,6 +329,7 @@ var build = async(function*() {
                     while (deltaIndent++) {
                         navPoint = navPoint.up();
                     }
+                    navPoint = navPoint.up().ele('navPoint');
                 }
             }
         }
@@ -403,7 +455,7 @@ var build = async(function*() {
 
 
 var pack = async(function*() {
-    if (! BookData)
+    if (! Metadata)
         yield load();
 
     info('[打包EPUB]');
@@ -526,16 +578,6 @@ process.exit();
 
 /*
 
-!!!
-===========
-自定义脚本
-主题
-
-!!
-============
-
-!
-============
 
 
 */
