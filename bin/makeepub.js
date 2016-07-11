@@ -12,11 +12,11 @@ const EpubAchive = require('../lib/EpubAchive.js');
 const { print, info, debug, warn } = require('../lib/Utils.js');
 const { joinPath, changeExt, getFileType } = require('../lib/Utils.js');
 
-const async = require('../lib/Async.js').async;
+const { async } = require('../lib/Async.js');
 const { readFile, writeFile, copyFile, access, readdir } = require('../lib/Async.js');
-const input = require('../lib/Async.js').input;
+const { input } = require('../lib/Async.js');
 
-var Manifest = require('../lib/Book.js').Manifest;
+var Manifest = require('../lib/Manifest.js');
 const parseBook = require('../lib/Book.js').parseBook;
 
 const { renderStyle, xhtmlTemplate, imageXhtmlTemplate, fileTemplate } = require('../lib/Template.js');
@@ -216,7 +216,8 @@ var build = async(function*() {
     // cover
     let coverSpine = {
         file: 'cover.xhtml',
-        image: Metadata.coverImage
+        image: Metadata.coverImage,
+        fullscreen: true,
     };
     Spines.unshift(coverSpine);
 
@@ -281,7 +282,7 @@ var build = async(function*() {
     {
         info('[[TOC.NCX]]');
 
-        console.dir(Tocs);
+        // console.dir(Tocs);
 
         let toc_ncx = xmlbuilder.create('ncx').dec('1.0', 'utf-8', false).att({
             'xmlns': 'http://www.daisy.org/z3986/2005/ncx/',
