@@ -14,6 +14,8 @@ TODO
 - ! 辅助生成 BOOK
 - ! 辅助生成 template
 - ! READ.md
+- 打包时生成 tocs 文件
+- less
 - duokan：用 jQuery 去特化 <img> 等，而不是 markdown
 - 减少 node 的依赖
 - 提交到 npm
@@ -55,18 +57,15 @@ TODO
 命令帮助
 -----------------------
 
-
      makeepub for duokan
      
-     makeepub [options] <epubdir> [out_file（默认与文件夹同名.epub）]
+     usage: makeepub [options] <epub_dir>
      
-     -b <builddir>  _build     编译路径 
-     -t <theme>     duokan     使用的主题（默认）
-     -m <path> metadata路径(默认=out_dir)
-     
-     -c 只编译，不打包
-     -p 只打包，不编译
-     
-     
-     -a 全部更新，默认只更新改动文件
-     -j <N>  多线程编译
+     options:
+       -b (_build)  编译路径 
+       -m  metadata路径(默认=out_dir)
+       
+       -c 只编译，不打包
+       -p 只打包，不编译
+       
+       -a 全部更新，默认只更新改动文件
