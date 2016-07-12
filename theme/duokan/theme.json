@@ -1,0 +1,23 @@
+{
+    "inherit": "default",
+    "stylesheet": "stylesheet.less",
+    "highlight_style": "",
+    "options": {
+
+    }
+}
+
+
+
+*.md => chapter.xhtml
+
+
+
+/*
+文件对应
+
+*.md -> chapter.xhtml
+
+
+
+*/

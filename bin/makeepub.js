@@ -26,20 +26,12 @@ const { renderStyle, xhtmlTemplate, imageXhtmlTemplate, fileTemplate } = require
 
 const CwdDir = process.cwd();
 const ExeDir = __dirname;
+const DistDir = joinPath(ExeDir, '../dist');
 
 var EpubPath;
 var OutputPath;
-
 var BuildPath;
-var TemplatePath;
-var DefaultTemplatePath = joinPath(ExeDir, '../template/default');
 var BookPath;
-
-var DefaultTemplates = {};
-var templates = fs.readdirSync(joinPath(ExeDir, '../template'));
-templates.forEach(t => {
-    DefaultTemplates[t] = joinPath(ExeDir, '../template', t);
-});
 
 var Metadata, Tocs, Spines;
 
@@ -464,7 +456,7 @@ var pack = async(function*() {
     let fileName = joinPath(BuildPath, 'output.epub');
     let epubAchive = new EpubAchive(fileName);
 
-    let filePath = joinPath(DefaultTemplatePath, 'container.xml');
+    let filePath = joinPath(DistDir, 'container.xml');
     epubAchive.addFile('META-INF/container.xml', yield readFile(filePath));
 
     for (let file of ResourceFiles) {
@@ -493,13 +485,13 @@ var pack = async(function*() {
 
 var argv = require('minimist')(process.argv.slice(2));
 
-if (argv.t) {
-    let t = argv.t;
-    if (DefaultTemplates.hasOwnProperty(t))
-        TemplatePath = DefaultTemplates[t];
-    else
-        TemplatePath = path.isAbsolute(t) ? t : joinPath(CwdDir, t);
-}
+// if (argv.t) {
+//     let t = argv.t;
+//     if (DefaultTemplates.hasOwnProperty(t))
+//         TemplatePath = DefaultTemplates[t];
+//     else
+//         TemplatePath = path.isAbsolute(t) ? t : joinPath(CwdDir, t);
+// }
 
 if (argv.m) {
     let m = argv.m;
@@ -531,12 +523,12 @@ BookPath = joinPath(EpubPath, 'BOOK');
 
 
 
-debug("当前路径:", CwdDir);
+// debug("当前路径:", CwdDir);
 // debug("程序路径:", ExeDir);
-debug("模板路径:", TemplatePath);
-debug("编译路径:", BuildPath);
-debug("输出路径:", OutputPath);
-debug("BOOK路径:", BookPath);
+// debug("模板路径:", TemplatePath);
+// debug("编译路径:", BuildPath);
+// debug("输出路径:", OutputPath);
+// debug("BOOK路径:", BookPath);
 
 
 let catchCallback = _.bind(warn, null, '编译出错: ');
@@ -569,7 +561,6 @@ print(`
  * -p 只打包，不编译
  *
  * -a 全部更新，默认只更新改动文件
- * -j <N>  多线程编译
  *
  *  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 `);
@@ -578,7 +569,6 @@ process.exit();
 
 
 /*
-
 
 
 */
