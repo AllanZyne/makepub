@@ -1,9 +1,9 @@
 {
   "name": "epubtools",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A tool to make epub book.",
   "bin": {
-    "makeepub": "./bin/makeepub.js"
+    "makeepub": "bin/makeepub.js"
   },
   "scripts": {
     "test": "node test/runTest.js"
@@ -20,7 +20,6 @@
   "homepage": "https://github.com/DrsExplorer/epubtools#readme",
   "dependencies": {
     "colors": "^1.1.2",
-    "crc": "^3.3.0",
     "highlight.js": "^8.9.1",
     "jsdom": "^7.2.2",
     "less": "^2.5.3",
